@@ -19,7 +19,7 @@ def get_conn():
 
 
 def init_db(retries: int = 10, delay: float = 2.0):
-    sql = open("init.sql").read()
+    sql = open("patch.sql").read()
     for attempt in range(retries):
         try:
             conn = get_conn()

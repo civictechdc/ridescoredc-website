@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -28,8 +28,8 @@ VALID_PAYLOAD = {
 
 @pytest.fixture
 def client():
-    with patch("api.main.init_db"), patch("api.main.get_conn", return_value=make_mock_conn()):
-        from api.main import app
+    with patch("main.init_db"), patch("main.get_conn", return_value=make_mock_conn()):
+        from main import app
         with TestClient(app) as c:
             yield c
 
@@ -43,8 +43,8 @@ def test_health_ok(client):
 
 
 def test_health_db_down():
-    with patch("api.main.init_db"), patch("api.main.get_conn", side_effect=Exception("connection refused")):
-        from api.main import app
+    with patch("main.init_db"), patch("main.get_conn", side_effect=Exception("connection refused")):
+        from main import app
         with TestClient(app) as c:
             response = c.get("/health")
     assert response.status_code == 503
@@ -69,8 +69,8 @@ def test_submission_valid(client):
 def test_submission_db_error():
     conn = make_mock_conn()
     conn.__exit__ = MagicMock(side_effect=Exception("db write failed"))
-    with patch("api.main.init_db"), patch("api.main.get_conn", return_value=conn):
-        from api.main import app
+    with patch("main.init_db"), patch("main.get_conn", return_value=conn):
+        from main import app
         with TestClient(app) as c:
             response = c.post("/api/submissions", json=VALID_PAYLOAD)
     assert response.status_code == 500

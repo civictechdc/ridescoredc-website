@@ -1,135 +1,194 @@
-# Interactive DC Bike Safety Map
+# ridescoredc-website
 
-This project creates a preliminary interactive bike safety map for the streets of Washington DC. You can explore it [here](http://161.35.142.176/). It does the following:
-* pulls [road](https://opendata.dc.gov/datasets/DCGIS::roadway-block/about) and [crash](https://opendata.dc.gov/datasets/crashes-in-dc/about) data from the Open Data DC portal.
-* process them and create bike safety factors and a default ridescore
-* setups of the database and map tiling backend
-* Displays a map with: the default safety score, the ability for the user to re-weigh factors to create their own safety score, overhead imagery toggle, 5 years of bike accident history toggle, and the ability to click on a road segment to see it's attributes.
+Web application for the DC Bike Safety Map — interactive map, survey tool, and REST API.
 
-![screenshots of map](combined_screenshots.png)
+Part of the [RidescoreDC](https://github.com/civictechdc/ridescoredc) project by [Civic Tech DC](https://www.civictechdc.org/).
 
-## Data Processing
+**Related repos**
+- [ridescoredc](https://github.com/civictechdc/ridescoredc) — parent repo and project overview
+- [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models) — data processing and scoring model (Jupyter notebooks, PostGIS setup)
 
-The map uses [road](https://opendata.dc.gov/datasets/DCGIS::roadway-block/about) and [crash](https://opendata.dc.gov/datasets/crashes-in-dc/about) data from the Open Data DC portal. The road data are simplified and cleaned up (see jupyter notebook for details). For the crash data, we only use crashes that resulted in a bicyclist fatality or injury from the last 5 years.
+---
 
-## Safety score and interactive factors
+## Stack
 
-The LTS and ridescore build on 01_lts_osm_elia_v2.ipynb.
+| Layer | Technology |
+|---|---|
+| Frontend | Vanilla HTML/JS, MapLibre GL |
+| API | Python 3.12, FastAPI |
+| Tile server | Martin (MVT) |
+| Database | PostgreSQL 17 + PostGIS |
+| Container | Docker Compose |
 
-We use our own, modified level of traffic stress (LTS) calculator.
+---
 
-<table>
-  <tbody>
-    <tr>
-      <th>Bike lane</th>
-      <th>Number of lanes</th>
-      <th>Speed limit</th>
-      <th>Road function</th>
-      <th>LTS</th>
-    </tr>
-    <tr style="background-color: #a4f1b6;">
-      <td>Protected track</td>
-      <td>-</td>
-      <td>-</td>
-      <td>-</td>
-      <td>1</td>
-    <tr style="background-color: #f7f08c;">
-      <td>Buffered lane or painted lane</td>
-      <td>&lt;= 2</td>
-      <td>&lt;= 25</td>
-      <td>-</td>
-      <td>2</td>
-    </tr>
-    <tr style="background-color: #f7f08c;">
-      <td>None</td>
-      <td>&lt;= 2</td>
-      <td>&lt;= 25</td>
-      <td>Local</td>
-      <td>2</td>
-    </tr>
-    <tr style="background-color: #f0c77b;">
-      <td>Buffered lane or painted lane</td>
-      <td>&gt;2 and &lt;=3</td>
-      <td>&gt;25 and &lt;= 30</td>
-      <td>-</td>
-      <td>3</td>
-    </tr>
-    <tr style="background-color: #f0c77b;">
-      <td>None</td>
-      <td>&lt;=2</td>
-      <td>&gt;25 and &lt;= 30</td>
-      <td>Local</td>
-      <td>3</td>
-    </tr>
-    <tr style="background-color: #e47d86;">
-      <td colspan="4">Any other combination</td>
-      <td>4</td>
-    </tr>
-  </tbody>
-</table>
+## Developer Spinup
 
-We then use it to create our own road safety score (the default on the website). It has 3 components:
+### Prerequisites
 
-1) LTS levels are translated into the score using the following dictionary: {1:100, 2:75, 3:40, 4:10, none = 10}
-2) Type of bike lane is translated into a score using the following: {"protected_track":10, "buffered_lane":5, "painted_lane":3, "none":0}
-3) In short, the number of crashes is normalized to 100 \* (1- num_crash/95th_percentile of crashes).
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- Git
 
-They are then combined with the weighted sum: LTS\*0.6 + Crash\*0.3 + bike_lane\*0.1.
+### 1. Clone and configure
 
-The users can also create their own weighing the following factors:
-* Speed limit
-* Number of lanes
-* Bike lane type
-* Road type
-* Road width
-* Pavement condition
+```bash
+git clone https://github.com/civictechdc/ridescoredc-website
+cd ridescoredc-website
+```
 
-See data_processing jupyter notebook for more details on translation from raw factors to 0-100 score. They are then combined with the following postgres function:
+Copy the example environment file and adjust as needed:
 
-``` SQL
-CREATE OR REPLACE FUNCTION update_score(z integer, x integer, y integer, query_params json)
-RETURNS bytea AS $$
-DECLARE
-  mvt bytea;
-  bounds geometry;
-BEGIN
-  -- Tile bounds in 3857
-  bounds := ST_TileEnvelope(z, x, y);
+```bash
+cp .env.example .env
+```
 
-  SELECT INTO mvt
-  ST_AsMVT(tile, 'update_score', 4096, 'geom')
-  FROM (
-    SELECT
-      ST_AsMVTGeom(
-        ST_Transform(wkb_geometry, 3857),
-        bounds,
-        4096,
-        64,
-        true
-      ) AS geom,
-      (ridescore_v1*(query_params->>'i_ridescore')::int + speedlimit_score*(query_params->>'i_speedlimit')::int +
-num_lanes_score*(query_params->>'i_numlanes')::int+ facility_score*(query_params->>'i_facility')::int+ function_score*(query_params->>'i_function')::int+ road_width_score*(query_params->>'i_roadwidth')::int+ pavement_condition_score*(query_params->>'i_pavement')::int) / ((query_params->>'i_ridescore')::int + (query_params->>'i_speedlimit')::int+ (query_params->>'i_numlanes')::int+ (query_params->>'i_facility')::int+ (query_params->>'i_function')::int+ (query_params->>'i_roadwidth')::int+ (query_params->>'i_pavement')::int) AS user_score,
-	route_name,
-	bike_facility_type,
-	function,
-	lts_level,
-	num_lanes_raw,
-	parking_presence,
-	pavement_condition,
-	ridescore_v1,
-	road_width,
-	speed_limit_raw	
-    FROM ridescoredc
-    WHERE wkb_geometry &&
-          ST_Transform(bounds, 4326)
-  ) AS tile
-  WHERE geom IS NOT NULL;
+The default `POSTGRES_PASSWORD` is fine for local development.
 
-  RETURN mvt;
-END
-$$ LANGUAGE plpgsql STABLE STRICT PARALLEL SAFE;
+### 2. Start the stack
+
+```bash
+docker compose up
+```
+
+This starts four services:
+
+| Service | Address | Purpose |
+|---|---|---|
+| `nginx` | http://localhost:8000 | Reverse proxy — the single entry point |
+| `fastapi` | internal | FastAPI app + frontend, serves `index.html` |
+| `martin` | internal | MVT tile server |
+| `db` | localhost:5432 | PostGIS database |
+
+Open the app at **http://localhost:8000** — that's NGINX, which routes `/tiles/` to Martin and everything else (the app, static files, and `/api`) to FastAPI. Only NGINX and the database are published to the host; `fastapi` and `martin` are reached *through* NGINX, exactly as on the servers.
+
+The `fastapi` service runs the stock `python:3.12-slim` image with `api/` mounted in, installing its dependencies on start — so the first boot takes a little longer while pip runs. The `patch.sql` schema patch is then applied automatically. If the database container isn't ready yet, the API retries for up to 20 seconds.
+
+**Routing mirrors staging and production.** Both locally and on the servers, **NGINX is the front door and routes by path** — `/api` → `fastapi` and `/tiles/` → Martin — so the frontend uses relative URLs (`/tiles/update_score/...`) that work in every environment. This is a deliberate convention: **tiles must go through `/tiles/` to Martin**, and because Martin isn't reachable any other way locally, a hardcoded direct URL fails in dev instead of silently breaking in production. Locally the proxy config lives at `nginx/default.conf`; on the servers NGINX lives outside this repo (ask an org admin to see or change it).
+
+### 3. Seed the database from production
+
+The app expects an existing database — most importantly the `ridescoredc` road-data table, which is **not** created by this repo. **Request a copy of the production SQL dump (`dev_backup.sql`) from an org admin.** It is a plain `pg_dump` file and is intentionally kept out of version control.
+
+With the stack running, load the dump into the database container with `psql` (run this in a separate terminal):
+
+```bash
+docker compose exec -T db psql -U postgres -d db < dev_backup.sql
+```
+
+This writes the imported data into `pg_data/` (see [Database](#database) below), so you only need to do it once — the data persists across restarts. `api/patch.sql` runs on top of it as an idempotent patch on every boot, adding/updating the survey tables without touching the imported road data.
+
+### 4. Open the app
+
+Navigate to [http://localhost:8000](http://localhost:8000). Refresh after seeding to see the road data appear.
+
+### 5. Tear down
+
+```bash
+docker compose down
+```
+
+To also wipe the database volume (this deletes your restored production data — you'll need to restore the dump again):
+
+```bash
+docker compose down -v
+rm -rf pg_data/
+```
+
+---
+
+## Database
+
+Local development starts from a **copy of the production database**, not from an empty schema. Request the production SQL dump (`dev_backup.sql`) from an org admin and load it via `psql` as part of getting set up (see step 3 above).
+
+- **`dev_backup.sql`** is a plain-text `pg_dump` of production — the *input* to a restore. You load it by piping it through `psql` against the running database container; you never place it inside `pg_data/`. It is not committed to this repo (request it from an admin).
+- **`pg_data/`** is Postgres's own on-disk data directory, mounted into the PostgreSQL container. It is the *result* of the restore — where the imported data actually lives — and it persists across `docker compose down` (but not `down -v`), so you only restore the dump once. It is **deliberately excluded from version control** (see `.gitignore`): it holds real data and is machine-local, so never commit it.
+- **`api/patch.sql`** is not a full schema definition — it is an **idempotent patch** applied on top of the restored production copy on every boot. It creates the survey tables if missing and reconciles their columns, using `IF NOT EXISTS` / `ALTER ... IF EXISTS` so it's safe to re-run.
+- **`api/migrations/`** holds one-off schema migrations.
+
+The road-data pipeline that produces the `ridescoredc` table lives in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models).
+
+---
+
+## Deploy
+
+Deployment is driven entirely by Git. You develop on a feature branch, verify it locally with the linter and tests, then open a pull request into `develop`. Merging to `develop` deploys to staging; merging to `main` deploys to production. GitHub Actions runs the same lint and test checks on every push and pull request, and a branch that fails them cannot be deployed.
+
+### Branching (Gitflow)
+
+This project follows [Gitflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow). Never commit directly to `develop` or `main` — start every piece of work from a new branch off `develop`:
+
+```bash
+git checkout develop
+git checkout -b feature/FEATURE_NAME_HERE   # creates a new feature branch
+```
+
+When the work is ready, push the branch and open a pull request back into `develop`.
+
+### Lint and Tests
+
+Run the linter and tests **before every commit** — CI runs the same checks, and a branch that fails them will not deploy. The `fastapi` service already installed `ruff` and `pytest` (from `requirements-dev.txt`) when it started, so with the stack running (from [step 2](#2-start-the-stack)) you just `exec` into it — no Python needed on your host:
+
+**Lint (Ruff):**
+
+```bash
+docker compose exec fastapi ruff check .
+```
+
+**Tests (Pytest):**
+
+```bash
+docker compose exec fastapi pytest tests/ -v
+```
+
+Because `api/` is mounted into the container, these check your current working-tree code. The tests mock the database, so they never touch the running `db` service.
+
+### GitHub Actions
+
+CI runs on every push and pull request to `develop` and `main`.
+
+| Job | Trigger | What it does |
+|---|---|---|
+| `lint` | all branches | Runs Ruff on `api/` |
+| `test` | all branches | Runs Pytest against mocked DB |
+| `stage` | push to `develop` | Deploys to [dev.ridescoredc.com](https://dev.ridescoredc.com) |
+| `deploy` | push to `main` | Deploys to [ridescoredc.com](https://ridescoredc.com) |
+
+The `stage` and `deploy` jobs only run after `lint` and `test` pass.
+
+When you open a pull request from your feature branch into `develop`, **check the GitHub Actions tab (or the checks on the PR) and confirm `lint` and `test` pass** before asking for review. Fix any failures and push again — the checks re-run automatically.
+
+Promotion from `develop` to production is handled with care: a **senior dev will help you open the pull request from `develop` into `main`**. Merging to `develop` deploys to the staging server and merging to `main` deploys to the production server, both automatically, so the `develop` → `main` step is done deliberately and with review.
+
+### SSH Access
+
+Deployments use SSH keys stored as GitHub Actions secrets (`STG_SSH_PRIVATE_KEY`, `PRD_SSH_PRIVATE_KEY`). To get access to the staging or production server, **request an SSH key from an org admin**.
+
+---
+
+## Project Structure
 
 ```
-## Backend and Frontend setup instructions (with DigitalOcean Droplet)
-
-Coming soon
+ridescoredc-website/
+├── api/
+│   ├── main.py              # FastAPI app (endpoints + static file serving)
+│   ├── patch.sql            # Idempotent schema patch (survey tables)
+│   ├── requirements.txt     # Production dependencies
+│   ├── requirements-dev.txt # Dev/test dependencies
+│   ├── migrations/
+│   ├── static/
+│   │   ├── index.html       # Main map UI
+│   │   └── feedback_mvp.html
+│   └── tests/
+│       ├── conftest.py
+│       └── test_api.py
+├── nginx/
+│   └── default.conf         # Local reverse proxy (/tiles/ -> martin, / -> fastapi)
+├── scripts/
+│   └── gitlab-ci/
+│       └── deployment.sh    # Remote deployment script
+├── docker-compose.yml
+├── martin.yaml              # Tile server config
+└── .github/
+    └── workflows/
+        └── ci.yml
+```
