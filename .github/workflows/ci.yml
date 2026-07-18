@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - develop
+      - main
   pull_request:
     branches:
       - develop
+      - main
 
 env:
   STG_SERVER: dev.ridescoredc.com
@@ -57,4 +59,22 @@ jobs:
           eval $(ssh-agent -s)
           echo "$STG_SSH_PRIVATE_KEY" | ssh-add -
           ssh -p $STG_PORT $STG_USER@$STG_SERVER 'bash -s' < scripts/gitlab-ci/deployment.sh $STG_PATH $STG_USER develop
+          touch deploy-success
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://ridescoredc.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to production
+        env:
+          PRD_SSH_PRIVATE_KEY: ${{ secrets.PRD_SSH_PRIVATE_KEY }}
+        run: |
+          eval $(ssh-agent -s)
+          echo "$PRD_SSH_PRIVATE_KEY" | ssh-add -
+          ssh -p $PRD_PORT $PRD_USER@$PRD_SERVER 'bash -s' < scripts/gitlab-ci/deployment.sh $PRD_PATH $PRD_USER main
           touch deploy-success
