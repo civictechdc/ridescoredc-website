@@ -13,13 +13,18 @@ from pydantic import BaseModel
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
+# Resolve bundled files relative to this module, not the current working
+# directory, so the app works whether it's launched from /app (Docker) or
+# the repo root (e.g. `pytest api/tests/` in CI).
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def get_conn():
     return psycopg2.connect(DATABASE_URL)
 
 
 def init_db(retries: int = 10, delay: float = 2.0):
-    sql = open("patch.sql").read()
+    sql = open(os.path.join(BASE_DIR, "patch.sql")).read()
     for attempt in range(retries):
         try:
             conn = get_conn()
@@ -147,4 +152,4 @@ def health():
         raise HTTPException(status_code=503, detail=str(exc))
 
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/", StaticFiles(directory=os.path.join(BASE_DIR, "static"), html=True), name="static")
