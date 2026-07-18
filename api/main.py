@@ -8,6 +8,7 @@ import psycopg2
 import psycopg2.extras
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 DATABASE_URL = os.environ["DATABASE_URL"]
@@ -144,3 +145,6 @@ def health():
         return {"status": "ok"}
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc))
+
+
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
