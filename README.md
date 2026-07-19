@@ -39,10 +39,10 @@ cd ridescoredc-website
 Copy the example environment file and adjust as needed:
 
 ```bash
-cp .env.example .env
+cp api/.env.example api/.env
 ```
 
-The default `POSTGRES_PASSWORD` is fine for local development.
+The env file lives in `api/` — Compose reads it via `env_file` (see `docker-compose.yml`), and on the server the app loads the same file directly. The defaults are fine for local development.
 
 ### 2. Start the stack
 
@@ -174,6 +174,7 @@ ridescoredc-website/
 │   ├── patch.sql            # Idempotent schema patch (survey tables)
 │   ├── requirements.txt     # Production dependencies
 │   ├── requirements-dev.txt # Dev/test dependencies
+│   ├── .env.example         # Env template (copy to .env — gitignored)
 │   ├── migrations/
 │   ├── static/
 │   │   ├── index.html       # Main map UI

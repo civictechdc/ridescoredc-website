@@ -22,8 +22,8 @@ services:
     command: sh -c "pip install -r requirements-dev.txt && uvicorn main:app --host 0.0.0.0 --port 8000"
     expose:
       - "8000"
-    environment:
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db/db
+    env_file:
+      - ./api/.env
     depends_on:
       - db
 
@@ -33,8 +33,9 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
+    env_file:
+      - ./api/.env
     environment:
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db/db
       - MARTIN_CACHE_SIZE=0
     volumes:
       - ./martin.yaml:/martin.yaml
@@ -45,10 +46,11 @@ services:
   db:
     image: postgis/postgis:17-3.5-alpine
     restart: unless-stopped
+    env_file:
+      - ./api/.env
     environment:
       - POSTGRES_DB=db
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - 5432:5432
     volumes:

@@ -843,7 +843,7 @@ document.getElementById('updateBtn').addEventListener('click', () => {
 function RefreshZone(i_ridescore, i_speedlimit, i_numlanes, i_facility, i_function, i_roadwidth, i_pavement) {
   const ts = Date.now();
   map.getSource('segments').setTiles([
-    `http://localhost:3000/update_score_v2/{z}/{x}/{y}?i_ridescore=${i_ridescore}&i_speedlimit=${i_speedlimit}&i_numlanes=${i_numlanes}&i_facility=${i_facility}&i_function=${i_function}&i_roadwidth=${i_roadwidth}&i_pavement=${i_pavement}&ts=${ts}`
+    `${location.origin}/tiles/update_score_v2/{z}/{x}/{y}?i_ridescore=${i_ridescore}&i_speedlimit=${i_speedlimit}&i_numlanes=${i_numlanes}&i_facility=${i_facility}&i_function=${i_function}&i_roadwidth=${i_roadwidth}&i_pavement=${i_pavement}&ts=${ts}`
   ]);
 }
 
@@ -879,7 +879,7 @@ map.on('style.load', () => {
   /* ── Road segments source (v2 — includes ogc_fid for feature-state) ── */
   map.addSource('segments', {
     type: 'vector',
-    tiles: ['http://localhost:3000/update_score_v2/{z}/{x}/{y}?i_ridescore=4&i_speedlimit=0&i_numlanes=0&i_facility=0&i_function=0&i_roadwidth=0&i_pavement=0'],
+    tiles: [`${location.origin}/tiles/update_score_v2/{z}/{x}/{y}?i_ridescore=4&i_speedlimit=0&i_numlanes=0&i_facility=0&i_function=0&i_roadwidth=0&i_pavement=0`],
     promoteId: { 'update_score_v2': 'ogc_fid' },
     minzoom: 1,
     maxzoom: 14
@@ -953,7 +953,7 @@ map.on('style.load', () => {
   /* ── Crash points source ── */
   map.addSource('crashes', {
     type: 'vector',
-    tiles: ['http://localhost:3000/crashes_dc/{z}/{x}/{y}'],
+    tiles: [`${location.origin}/tiles/crashes_dc/{z}/{x}/{y}`],
     minzoom: 1, maxzoom: 14
   });
   map.addLayer({
