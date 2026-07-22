@@ -37,7 +37,7 @@ echo "[deploy] deployed $(git rev-parse --short HEAD) — $(git log -1 --pretty=
 # Restart the app so new code takes effect. On startup the app applies the
 # idempotent patch.sql, so no separate migration step is needed.
 # Requires a systemd unit and passwordless sudo for this one command (see notes).
-sudo -n systemctl restart ridescoredc-website.service
+sudo -n systemctl restart ridescore-fastapi.service
 sudo -n systemctl restart martin
 
 echo "[deploy] restarted $SERVICE — done"
