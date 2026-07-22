@@ -58,6 +58,7 @@ jobs:
         run: |
           eval $(ssh-agent -s)
           echo "$STG_SSH_PRIVATE_KEY" | ssh-add -
+          ssh-keyscan -p $STG_PORT $STG_SERVER >> ~/.ssh/known_hosts
           ssh -p $STG_PORT $STG_USER@$STG_SERVER 'bash -s' < scripts/gitlab-ci/deployment.sh $STG_PATH $STG_USER develop
           touch deploy-success
 
