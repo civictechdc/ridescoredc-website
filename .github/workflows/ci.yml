@@ -12,7 +12,7 @@ on:
 
 env:
   STG_SERVER: dev.ridescoredc.com
-  STG_USER: ubuntu
+  STG_USER: fastapi
   STG_PORT: 22
   STG_PATH: /opt/ridescoredc-website
   PRD_SERVER: ridescoredc.com
