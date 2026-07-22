@@ -40,4 +40,4 @@ echo "[deploy] deployed $(git rev-parse --short HEAD) — $(git log -1 --pretty=
 sudo -n systemctl restart ridescore-fastapi.service
 sudo -n systemctl restart martin
 
-echo "[deploy] restarted $SERVICE — done"
+echo "[deploy] restarted martin and ridescore-fastapi services — done"
