@@ -4,8 +4,7 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import List, Optional
 
-import psycopg2
-import psycopg2.extras
+import psycopg
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -20,18 +19,21 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_conn():
-    return psycopg2.connect(DATABASE_URL)
+    return psycopg.connect(DATABASE_URL)
 
 
 def init_db(retries: int = 10, delay: float = 2.0):
-    sql = open(os.path.join(BASE_DIR, "patch.sql")).read()
+    # Gate startup on the database being reachable (matters under docker-compose,
+    # where db and app boot together). The schema itself -- including the survey
+    # tables -- is managed by yoyo migrations in ridescoredc-models, not applied
+    # here, so this no longer patches anything.
     for attempt in range(retries):
         try:
-            conn = get_conn()
-            with conn:
+            # psycopg 3: the connection context manager commits (or rolls back)
+            # and closes the connection on exit -- no explicit close needed.
+            with get_conn() as conn:
                 with conn.cursor() as cur:
-                    cur.execute(sql)
-            conn.close()
+                    cur.execute("SELECT 1")
             return
         except Exception as exc:
             if attempt == retries - 1:
@@ -82,8 +84,7 @@ class SurveySubmission(BaseModel):
 def create_submission(body: SurveySubmission):
     submission_id = str(uuid.uuid4())
     try:
-        conn = get_conn()
-        with conn:
+        with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
@@ -134,8 +135,6 @@ def create_submission(body: SurveySubmission):
                             """,
                             (submission_id, ogc_fid, seg_id, seq_idx),
                         )
-
-        conn.close()
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

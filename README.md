@@ -61,7 +61,7 @@ This starts four services:
 
 Open the app at **http://localhost:8000** — that's NGINX, which routes `/tiles/` to Martin and everything else (the app, static files, and `/api`) to FastAPI. Only NGINX and the database are published to the host; `fastapi` and `martin` are reached *through* NGINX, exactly as on the servers.
 
-The `fastapi` service runs the stock `python:3.12-slim` image with `api/` mounted in, installing its dependencies on start — so the first boot takes a little longer while pip runs. The `patch.sql` schema patch is then applied automatically. If the database container isn't ready yet, the API retries for up to 20 seconds.
+The `fastapi` service runs the stock `python:3.12-slim` image with `api/` mounted in, installing its dependencies on start — so the first boot takes a little longer while pip runs. If the database container isn't ready yet, the API retries the connection for up to 20 seconds before serving. (The database **schema** is no longer patched here on boot — it's managed by yoyo migrations in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models).)
 
 **Routing mirrors staging and production.** Both locally and on the servers, **NGINX is the front door and routes by path** — `/api` → `fastapi` and `/tiles/` → Martin — so the frontend uses relative URLs (`/tiles/update_score/...`) that work in every environment. This is a deliberate convention: **tiles must go through `/tiles/` to Martin**, and because Martin isn't reachable any other way locally, a hardcoded direct URL fails in dev instead of silently breaking in production. Locally the proxy config lives at `nginx/default.conf`; on the servers NGINX lives outside this repo (ask an org admin to see or change it).
 
@@ -75,7 +75,7 @@ With the stack running, load the dump into the database container with `psql` (r
 docker compose exec -T db psql -U postgres -d db < dev_backup.sql
 ```
 
-This writes the imported data into `pg_data/` (see [Database](#database) below), so you only need to do it once — the data persists across restarts. `api/patch.sql` runs on top of it as an idempotent patch on every boot, adding/updating the survey tables without touching the imported road data.
+This writes the imported data into `pg_data/` (see [Database](#database) below), so you only need to do it once — the data persists across restarts. The survey tables are **not** created here — they're part of the schema managed by yoyo migrations in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models); apply those against your local `db` to get them.
 
 ### 4. Open the app
 
@@ -102,8 +102,8 @@ Local development starts from a **copy of the production database**, not from an
 
 - **`dev_backup.sql`** is a plain-text `pg_dump` of production — the *input* to a restore. You load it by piping it through `psql` against the running database container; you never place it inside `pg_data/`. It is not committed to this repo (request it from an admin).
 - **`pg_data/`** is Postgres's own on-disk data directory, mounted into the PostgreSQL container. It is the *result* of the restore — where the imported data actually lives — and it persists across `docker compose down` (but not `down -v`), so you only restore the dump once. It is **deliberately excluded from version control** (see `.gitignore`): it holds real data and is machine-local, so never commit it.
-- **`api/patch.sql`** is not a full schema definition — it is an **idempotent patch** applied on top of the restored production copy on every boot. It creates the survey tables if missing and reconciles their columns, using `IF NOT EXISTS` / `ALTER ... IF EXISTS` so it's safe to re-run.
-- **`api/migrations/`** holds one-off schema migrations.
+- **The survey tables** (submissions + segments) are no longer created by this repo at boot. Their schema is managed by yoyo migrations in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models) (`live/schema/0002_survey.sql`); the work-in-progress copy of that DDL lives there as `live/schema/wip-patch.sql`.
+- **`api/migrations/`** holds one-off schema migrations from before the yoyo migration.
 
 The road-data pipeline that produces the `ridescoredc` table lives in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models).
 
@@ -171,7 +171,6 @@ Deployments use SSH keys stored as GitHub Actions secrets (`STG_SSH_PRIVATE_KEY`
 ridescoredc-website/
 ├── api/
 │   ├── main.py              # FastAPI app (endpoints + static file serving)
-│   ├── patch.sql            # Idempotent schema patch (survey tables)
 │   ├── requirements.txt     # Production dependencies
 │   ├── requirements-dev.txt # Dev/test dependencies
 │   ├── .env.example         # Env template (copy to .env — gitignored)

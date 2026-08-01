@@ -34,8 +34,8 @@ git pull --ff-only origin "$BRANCH"
 
 echo "[deploy] deployed $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
 
-# Restart the app so new code takes effect. On startup the app applies the
-# idempotent patch.sql, so no separate migration step is needed.
+# Restart the app so new code takes effect. Database schema changes are handled
+# separately by yoyo migrations (ridescoredc-models), not on app startup.
 # Requires a systemd unit and passwordless sudo for this one command (see notes).
 sudo -n systemctl restart ridescoredc-website.service
 sudo -n systemctl restart martin
