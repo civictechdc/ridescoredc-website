@@ -75,7 +75,7 @@ With the stack running, load the dump into the database container with `psql` (r
 docker compose exec -T db psql -U postgres -d db < dev_backup.sql
 ```
 
-This writes the imported data into `pg_data/` (see [Database](#database) below), so you only need to do it once — the data persists across restarts. The survey tables are **not** created here — they're part of the schema managed by yoyo migrations in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models); apply those against your local `db` to get them.
+This writes the imported data into `pg_data/` (see [Database](#database) below), so you only need to do it once — the data persists across restarts. The survey tables are **not** created here. Their DDL currently lives as a work-in-progress file (`live/schema/wip-patch.sql`) in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models) and is not yet wired into a migration — apply it by hand (`psql "$DATABASE_URL" -f wip-patch.sql`) if you need the survey tables locally.
 
 ### 4. Open the app
 
@@ -102,7 +102,7 @@ Local development starts from a **copy of the production database**, not from an
 
 - **`dev_backup.sql`** is a plain-text `pg_dump` of production — the *input* to a restore. You load it by piping it through `psql` against the running database container; you never place it inside `pg_data/`. It is not committed to this repo (request it from an admin).
 - **`pg_data/`** is Postgres's own on-disk data directory, mounted into the PostgreSQL container. It is the *result* of the restore — where the imported data actually lives — and it persists across `docker compose down` (but not `down -v`), so you only restore the dump once. It is **deliberately excluded from version control** (see `.gitignore`): it holds real data and is machine-local, so never commit it.
-- **The survey tables** (submissions + segments) are no longer created by this repo at boot. Their schema is managed by yoyo migrations in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models) (`live/schema/0002_survey.sql`); the work-in-progress copy of that DDL lives there as `live/schema/wip-patch.sql`.
+- **The survey tables** (submissions + segments) are no longer created by this repo at boot, and are not yet managed by a yoyo migration either. Their DDL currently lives only as a work-in-progress file, `live/schema/wip-patch.sql`, in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models); until it's folded into a migration, create the tables by applying that file manually.
 - **`api/migrations/`** holds one-off schema migrations from before the yoyo migration.
 
 The road-data pipeline that produces the `ridescoredc` table lives in [ridescoredc-models](https://github.com/civictechdc/ridescoredc-models).
