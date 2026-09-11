@@ -3,7 +3,7 @@ import { defineConfig, loadEnv } from 'vite';
 import { reportEnv } from './scripts/check-env.mjs';
 
 // Vite is a development tool here and is never deployed. It serves the pages
-// from api/static, the same files nginx and FastAPI serve in production, and
+// from frontend/, the same files nginx and FastAPI serve in production, and
 // forwards everything else to an upstream. There is no build step: production
 // keeps serving these files directly.
 //
@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
   console.log(`  tiles and API  ->  ${upstream}\n`);
 
   return {
-    root: 'api/static',
+    root: 'frontend',
     server: {
       proxy: {
         '/tiles': forward,

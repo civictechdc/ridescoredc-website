@@ -172,4 +172,10 @@ def health():
         raise HTTPException(status_code=503, detail=str(exc))
 
 
-app.mount("/", StaticFiles(directory=os.path.join(BASE_DIR, "static"), html=True), name="static")
+# The pages live beside this package rather than inside it, because they are not
+# part of the API: nginx proxies every non-tile request here and this serves
+# them. html=True is what makes /survey/ find survey/index.html, so a page's
+# address is its folder both here and under the development server.
+FRONTEND_DIR = os.path.join(BASE_DIR, "..", "frontend")
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
