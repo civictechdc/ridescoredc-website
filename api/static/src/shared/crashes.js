@@ -40,12 +40,24 @@ RideScore.addCrashes = function addCrashes(map) {
     'source-layer': 'crashes',
     layout: { visibility: 'none' },
     paint: {
-      // A crash that hurt someone badly counts for more, and a fatal one for
-      // much more.
+      // Every crash counts for something, and a bad one counts for much more.
+      //
+      // The baseline is deliberate. 91% of crashes in the published data
+      // injured nobody seriously, so weighing purely by severity would hide
+      // almost every crash and leave a layer that says "accidents" while
+      // showing a nearly empty map.
+      //
+      // The top of the ramp is 5 because that is the worst severity the data
+      // actually contains: one fatality and no major injuries. This read 20
+      // before, which no crash could ever reach, so even a death carried a
+      // quarter weight. That went unnoticed because the property names were
+      // wrong too, and the whole expression silently fell back to a flat
+      // weight of 1 for every crash.
       'heatmap-weight': [
         'interpolate', ['linear'],
         ['+', ['get', 'major_injuries_bicyclist'], ['*', ['get', 'fatal_bicyclist'], 5]],
-        0, 0, 6, 1,
+        0, 0.15,
+        5, 1,
       ],
       'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 0, 1, 15, 3],
       'heatmap-color': [
