@@ -3,3 +3,4 @@ ruff==0.6.9
 pytest==8.3.5
 httpx==0.28.1
 watchfiles==0.24.0
+yoyo-migrations==9.0.0
