@@ -8,6 +8,9 @@ services:
       - "8000:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # The pages, served straight from here. Read-only: nginx has no business
+      # writing to them. An edit shows up on reload, with nothing to restart.
+      - ./frontend:/usr/share/nginx/html:ro
     depends_on:
       - fastapi
       - martin

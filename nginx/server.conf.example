@@ -1,0 +1,83 @@
+# The nginx configuration for a deployed server, staging or production.
+#
+# Kept here so it is reviewed and versioned like everything else. It is not
+# applied by anything: copy it onto the server, adjust the marked lines, and
+# reload nginx.
+#
+# It routes the same three ways as nginx/default.conf does on a developer's
+# machine, so a URL behaves the same in both places. The differences are only
+# the ones a server forces: TLS, a real host name, a filesystem path instead of
+# a mount, and services on 127.0.0.1 rather than Compose service names.
+#
+#   sudo cp server.conf.example /etc/nginx/sites-available/ridescoredc
+#   sudo ln -s /etc/nginx/sites-available/ridescoredc /etc/nginx/sites-enabled/
+#   sudo nginx -t          # refuses to reload a config that does not parse
+#   sudo systemctl reload nginx
+
+# Plain HTTP exists only to send people to HTTPS.
+server {
+    listen 80;
+    server_name dev.ridescoredc.com;          # CHANGE: this server's name
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name dev.ridescoredc.com;          # CHANGE: this server's name
+
+    ssl_certificate     /etc/ssl/certs/ridescore.crt;    # CHANGE: this server's certificate
+    ssl_certificate_key /etc/ssl/private/ridescore.key;  # CHANGE: this server's key
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # The pages, served straight from the checkout. try_files turns /survey/
+    # into survey/index.html, so a page's address is its folder. This is the
+    # same rule as on a developer's machine.
+    #
+    # nginx must be able to read the path, which means the deploy user's home
+    # directory is a poor choice; /opt is the usual answer.
+    root /opt/ridescoredc-website/frontend;   # CHANGE: where the repository is checked out
+
+    location / {
+        try_files $uri $uri/index.html =404;
+    }
+
+    # Tiles -> Martin. The trailing slash strips the prefix, so
+    # /tiles/crashes/1/2/3 reaches Martin as /crashes/1/2/3.
+    location /tiles/ {
+        proxy_pass http://127.0.0.1:3000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Survey responses -> the API. No trailing slash, so the /api/ prefix
+    # is kept and the route the application declares is the route that arrives.
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;     # CHANGE if uvicorn listens elsewhere
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location = /health {
+        proxy_pass http://127.0.0.1:8080/health;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# Two notes for whoever applies this.
+#
+# The previous configuration sent every page request to the API with
+# `proxy_pass http://127.0.0.1:8080` under `location /`. The API no longer
+# serves pages, so that line must be replaced by the `root` and `try_files`
+# above or every page becomes a 404.
+#
+# The deploy script restarts the API and Martin but not nginx, because a
+# code deployment does not change routing. A change to this file therefore needs
+# `sudo systemctl reload nginx` by hand.
