@@ -24,9 +24,9 @@ def get_conn():
 
 def init_db(retries: int = 10, delay: float = 2.0):
     # Gate startup on the database being reachable (matters under docker-compose,
-    # where db and app boot together). The schema itself -- including the survey
-    # tables -- is managed by yoyo migrations in ridescoredc-models, not applied
-    # here, so this no longer patches anything.
+    # where db and app boot together). No schema is created here: the survey
+    # tables come from this repository's own migrations in api/migrations/, and
+    # the road data is loaded from a published package built by ridescoredc-models.
     for attempt in range(retries):
         try:
             # psycopg 3: the connection context manager commits (or rolls back)
@@ -62,14 +62,14 @@ app.add_middleware(
 class ContiguousSegment(BaseModel):
     sequence_index: int
     route_name: Optional[str] = None
-    ogc_fids: List[int]
+    segment_ids: List[str]
     lts_perceived: Optional[int] = None
     safety_rating: Optional[int] = None
     stress_factors: Optional[List[str]] = None
 
 
 class SurveySubmission(BaseModel):
-    route_ogc_fids: List[int]
+    segment_ids: List[str]
     contiguous_segments: List[ContiguousSegment]
     time_of_day: Optional[str] = None
     overall_satisfaction: Optional[int] = None
@@ -80,6 +80,23 @@ class SurveySubmission(BaseModel):
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
+def geometry_source(cur) -> str:
+    """Which published road data the segment ids in a response refer to.
+
+    Read from the database rather than taken from the browser: the page cannot
+    know which package was loaded, and a response that names the wrong one
+    cannot be interpreted later.
+    """
+    cur.execute("SELECT package FROM data.load_record WHERE dataset = 'road_segment'")
+    row = cur.fetchone()
+    if row is None:
+        raise HTTPException(
+            status_code=503,
+            detail="No road data is loaded, so a response cannot be tied to a road network.",
+        )
+    return row[0]
+
+
 @app.post("/api/submissions", status_code=201)
 def create_submission(body: SurveySubmission):
     submission_id = str(uuid.uuid4())
@@ -88,14 +105,15 @@ def create_submission(body: SurveySubmission):
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO survey_submissions
-                        (submission_id, route_ogc_fids, time_of_day,
+                    INSERT INTO app.survey_submissions
+                        (submission_id, segment_ids, geometry_source, time_of_day,
                          overall_satisfaction, would_ride_again, trip_purpose, comments)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         submission_id,
-                        body.route_ogc_fids,
+                        body.segment_ids,
+                        geometry_source(cur),
                         body.time_of_day,
                         body.overall_satisfaction,
                         body.would_ride_again,
@@ -108,8 +126,8 @@ def create_submission(body: SurveySubmission):
                     seg_id = str(uuid.uuid4())
                     cur.execute(
                         """
-                        INSERT INTO survey_contiguous_segments
-                            (id, submission_id, sequence_index, route_name, ogc_fids,
+                        INSERT INTO app.survey_contiguous_segments
+                            (id, submission_id, sequence_index, route_name, segment_ids,
                              lts_perceived, safety_rating, stress_factors)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                         """,
@@ -118,23 +136,26 @@ def create_submission(body: SurveySubmission):
                             submission_id,
                             seg.sequence_index,
                             seg.route_name,
-                            seg.ogc_fids,
+                            seg.segment_ids,
                             seg.lts_perceived,
                             seg.safety_rating,
                             seg.stress_factors,
                         ),
                     )
 
-                    for seq_idx, ogc_fid in enumerate(seg.ogc_fids):
+                    for seq_idx, segment_id in enumerate(seg.segment_ids):
                         cur.execute(
                             """
-                            INSERT INTO survey_granular_segments
-                                (submission_id, ogc_fid, contiguous_segment_id, sequence_index)
+                            INSERT INTO app.survey_granular_segments
+                                (submission_id, segment_id, contiguous_segment_id,
+                                 sequence_index)
                             VALUES (%s, %s, %s, %s)
-                            ON CONFLICT (submission_id, ogc_fid) DO NOTHING
+                            ON CONFLICT (submission_id, segment_id) DO NOTHING
                             """,
-                            (submission_id, ogc_fid, seg_id, seq_idx),
+                            (submission_id, segment_id, seg_id, seq_idx),
                         )
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

@@ -71,36 +71,6 @@
   #paintBtn.active { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
   #paintBtn.active::before { background: #3b82f6; }
 
-  /* ── Settings panel ── */
-  #settings-panel {
-    position: fixed; top: 50px; left: 12px; width: 310px;
-    max-height: calc(100vh - 64px); overflow-y: auto;
-    background: #fff; z-index: 800; border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,.14); padding: 18px 20px 22px;
-    transform-origin: top left; transform: scale(0); opacity: 0;
-    transition: transform .2s cubic-bezier(.4,0,.2,1), opacity .15s ease;
-    pointer-events: none;
-  }
-  #settings-panel.open { transform: scale(1); opacity: 1; pointer-events: auto; }
-  #settings-panel .panel-header { margin: 0 0 14px; font-size: 14px; font-weight: 600; color: #1a1a2e; display: flex; align-items: center; justify-content: space-between; }
-  #settings-panel .close-btn { background: none; border: none; cursor: pointer; color: #64748b; font-size: 12px; font-weight: 500; padding: 4px 8px; border-radius: 4px; }
-  #settings-panel .close-btn:hover { background: #f1f5f9; }
-
-  .mode-switcher { display: flex; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: 16px; }
-  .mode-switcher button { flex: 1; padding: 8px 0; font: 500 12px/1 'Inter', sans-serif; border: none; cursor: pointer; background: #fff; color: #64748b; transition: all .15s; }
-  .mode-switcher button.selected { background: #1a1a2e; color: #fff; }
-
-  .slider-group { display: flex; flex-direction: column; gap: 14px; }
-  .slider-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px; transition: opacity .15s; }
-  .slider-row label { font-size: 12px; font-weight: 500; color: #334155; }
-  .slider-row .val { font-size: 11px; font-weight: 600; color: #1a1a2e; text-align: right; min-width: 48px; }
-  .slider-row input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 5px; background: #e2e8f0; border-radius: 3px; outline: none; grid-column: 1 / -1; margin-top: 2px; }
-  .slider-row input[type="range"]:disabled { opacity: .3; }
-  .slider-row.disabled { opacity: .35; }
-  .slider-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #1a1a2e; border-radius: 50%; cursor: pointer; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
-  .ridescore-note { font-size: 11px; color: #64748b; line-height: 1.4; margin-bottom: 4px; padding: 8px 10px; background: #f8fafc; border-radius: 6px; }
-  #updateBtn { margin-top: 16px; width: 100%; padding: 10px; border: none; border-radius: 6px; background: #1a1a2e; color: #fff; font: 600 13px/1 'Inter', sans-serif; cursor: pointer; }
-  #updateBtn:hover { background: #2d2d4e; }
 
   /* ── Map ── */
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
@@ -572,10 +542,6 @@
 
 <!-- ── Controls ── -->
 <div class="controls">
-  <button class="ctrl-btn" id="settingsBtn" onclick="toggleSettings()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    Settings
-  </button>
   <button class="ctrl-btn toggle-btn" id="imageryBtn" onclick="toggleImagery()">Imagery</button>
   <button class="ctrl-btn toggle-btn" id="accidentsBtn" onclick="toggleAccidents()">Accidents</button>
   <button class="ctrl-btn toggle-btn" id="paintBtn" onclick="togglePaintMode()">
@@ -588,26 +554,6 @@
   </button>
 </div>
 
-<!-- ── Settings panel ── -->
-<div id="settings-panel">
-  <div class="panel-header">Your Priority
-    <button class="close-btn" onclick="toggleSettings()">Close &times;</button>
-  </div>
-  <div class="mode-switcher">
-    <button id="mode-ridescore" class="selected" onclick="setMode('ridescore')">Use RideScore</button>
-    <button id="mode-custom" onclick="setMode('custom')">Custom</button>
-  </div>
-  <div class="ridescore-note" id="ridescore-note">Using the pre-computed safety score. Switch to Custom to tune individual weights.</div>
-  <div class="slider-group">
-    <div class="slider-row disabled" id="row_speedlimit"><label>Speed Limit</label><span class="val" id="v_speedlimit">Medium</span><input type="range" min="0" max="3" value="2" id="i_speedlimit" disabled oninput="updateLabel('v_speedlimit',this.value)"></div>
-    <div class="slider-row disabled" id="row_numlanes"><label>Number of Lanes</label><span class="val" id="v_numlanes">Medium</span><input type="range" min="0" max="3" value="2" id="i_numlanes" disabled oninput="updateLabel('v_numlanes',this.value)"></div>
-    <div class="slider-row disabled" id="row_facility"><label>Bike Lane Type</label><span class="val" id="v_facility">Medium</span><input type="range" min="0" max="3" value="2" id="i_facility" disabled oninput="updateLabel('v_facility',this.value)"></div>
-    <div class="slider-row disabled" id="row_function"><label>Road Type</label><span class="val" id="v_function">Medium</span><input type="range" min="0" max="3" value="2" id="i_function" disabled oninput="updateLabel('v_function',this.value)"></div>
-    <div class="slider-row disabled" id="row_roadwidth"><label>Road Width</label><span class="val" id="v_roadwidth">Medium</span><input type="range" min="0" max="3" value="2" id="i_roadwidth" disabled oninput="updateLabel('v_roadwidth',this.value)"></div>
-    <div class="slider-row disabled" id="row_pavement"><label>Pavement Condition</label><span class="val" id="v_pavement">Medium</span><input type="range" min="0" max="3" value="2" id="i_pavement" disabled oninput="updateLabel('v_pavement',this.value)"></div>
-  </div>
-  <button id="updateBtn">Update Map</button>
-</div>
 
 <!-- ── Paint canvas (sits above map, pointer-events toggled by paint mode) ── -->
 <canvas id="paint-canvas"></canvas>
@@ -779,30 +725,6 @@
 /* ════════════════════════════════════════════════════════
    EXISTING MAP CONTROLS
 ════════════════════════════════════════════════════════ */
-const LABELS = ['Off', 'Low', 'Medium', 'High'];
-function updateLabel(spanId, val) {
-  document.getElementById(spanId).textContent = LABELS[val];
-}
-
-let currentMode = 'ridescore';
-const sliderIds = ['speedlimit','numlanes','facility','function','roadwidth','pavement'];
-
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('mode-ridescore').classList.toggle('selected', mode === 'ridescore');
-  document.getElementById('mode-custom').classList.toggle('selected', mode === 'custom');
-  document.getElementById('ridescore-note').style.display = mode === 'ridescore' ? 'block' : 'none';
-  sliderIds.forEach(id => {
-    document.getElementById('row_' + id).classList.toggle('disabled', mode === 'ridescore');
-    document.getElementById('i_' + id).disabled = mode === 'ridescore';
-  });
-}
-
-let settingsOpen = false;
-function toggleSettings() {
-  settingsOpen = !settingsOpen;
-  document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
-}
 
 let attributionOpen = false;
 function toggleAttribution() {
@@ -825,27 +747,6 @@ function toggleAccidents() {
   map.setLayoutProperty('crashes', 'visibility', accidentsOn ? 'visible' : 'none');
 }
 
-document.getElementById('updateBtn').addEventListener('click', () => {
-  if (currentMode === 'ridescore') {
-    RefreshZone(4, 0, 0, 0, 0, 0, 0);
-  } else {
-    RefreshZone(0,
-      document.getElementById('i_speedlimit').value,
-      document.getElementById('i_numlanes').value,
-      document.getElementById('i_facility').value,
-      document.getElementById('i_function').value,
-      document.getElementById('i_roadwidth').value,
-      document.getElementById('i_pavement').value
-    );
-  }
-});
-
-function RefreshZone(i_ridescore, i_speedlimit, i_numlanes, i_facility, i_function, i_roadwidth, i_pavement) {
-  const ts = Date.now();
-  map.getSource('segments').setTiles([
-    `${location.origin}/tiles/update_score_v2/{z}/{x}/{y}?i_ridescore=${i_ridescore}&i_speedlimit=${i_speedlimit}&i_numlanes=${i_numlanes}&i_facility=${i_facility}&i_function=${i_function}&i_roadwidth=${i_roadwidth}&i_pavement=${i_pavement}&ts=${ts}`
-  ]);
-}
 
 /* ════════════════════════════════════════════════════════
    STROKE / SELECTION ORDER (builds route path for paint)
@@ -876,11 +777,20 @@ map.on('style.load', () => {
   });
   map.addLayer({ id: 'ortho-2025-layer', type: 'raster', source: 'dc-ortho-2025', layout: { visibility: 'none' } });
 
-  /* ── Road segments source (v2 — includes ogc_fid for feature-state) ── */
+  /* ── Road segments source ──
+     Roads only: no score of any kind reaches this page. A respondent who has
+     been shown our assessment of a street cannot then give an independent one,
+     so the survey is served a view that contains no score rather than the same
+     data drawn plainly. See serving/020_survey_segments.sql in ridescoredc-models.
+
+     Two identifiers travel with every segment, and they do different jobs:
+       tile_id     an integer, used for MapLibre feature-state. Assigned per
+                   build, so it is meaningless once the data is rebuilt.
+       segment_id  text, the durable identity. This is what a response stores. */
   map.addSource('segments', {
     type: 'vector',
-    tiles: [`${location.origin}/tiles/update_score_v2/{z}/{x}/{y}?i_ridescore=4&i_speedlimit=0&i_numlanes=0&i_facility=0&i_function=0&i_roadwidth=0&i_pavement=0`],
-    promoteId: { 'update_score_v2': 'ogc_fid' },
+    tiles: [`${location.origin}/tiles/survey_segments/{z}/{x}/{y}`],
+    promoteId: { 'survey_segments': 'tile_id' },
     minzoom: 1,
     maxzoom: 14
   });
@@ -890,10 +800,11 @@ map.on('style.load', () => {
     id: 'road-score',
     type: 'line',
     source: 'segments',
-    'source-layer': 'update_score_v2',
+    'source-layer': 'survey_segments',
     paint: {
-      'line-color': ['interpolate', ['linear'], ['get', 'user_score'],
-        0, '#CC3232', 50, '#E7B416', 100, '#2DC937'],
+      // One colour for every road. Shading by score would tell the respondent
+      // what we think of the street before they say what they think of it.
+      'line-color': '#94a3b8',
       'line-width': 3
     }
   });
@@ -903,7 +814,7 @@ map.on('style.load', () => {
     id: 'road-selected',
     type: 'line',
     source: 'segments',
-    'source-layer': 'update_score_v2',
+    'source-layer': 'survey_segments',
     paint: {
       'line-color': '#2563eb',
       'line-width': 6,
@@ -921,7 +832,7 @@ map.on('style.load', () => {
     id: 'road-survey-border',
     type: 'line',
     source: 'segments',
-    'source-layer': 'update_score_v2',
+    'source-layer': 'survey_segments',
     paint: {
       'line-color': '#000',
       'line-width': 10,
@@ -932,7 +843,7 @@ map.on('style.load', () => {
     id: 'road-survey-active',
     type: 'line',
     source: 'segments',
-    'source-layer': 'update_score_v2',
+    'source-layer': 'survey_segments',
     paint: {
       'line-color': '#00e5ff',
       'line-width': 6,
@@ -943,7 +854,7 @@ map.on('style.load', () => {
   map.on('click', 'road-selected', (e) => {
     if (paintMode || unpaintMode) return;
     const f = e.features[0];
-    const featureId = f.id !== undefined ? f.id : f.properties.ogc_fid;
+    const featureId = f.id !== undefined ? f.id : f.properties.tile_id;
     if (featureId === undefined || featureId === null) return;
     if (selectedSegments.has(featureId)) {
       removeSegmentSelection(featureId);
@@ -982,14 +893,7 @@ map.on('style.load', () => {
       <div style="font-family:'Inter',sans-serif">
         <strong style="font-size:13px">${p.route_name || 'Unnamed Road'}</strong>
         <table style="margin-top:6px;font-size:11px;border-collapse:collapse;width:100%">
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Safety Score</td><td><strong>${p.user_score}</strong></td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">RideScore</td><td>${p.ridescore_v1}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">LTS</td><td>${p.lts_level}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Bike Lane</td><td>${p.bike_facility_type}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Speed Limit</td><td>${p.speed_limit_raw} mph</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Lanes</td><td>${p.num_lanes_raw}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Pavement</td><td>${p.pavement_condition}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Segment ID</td><td style="color:#94a3b8">${p.ogc_fid}</td></tr>
+          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Segment ID</td><td style="color:#94a3b8">${p.segment_id}</td></tr>
         </table>
       </div>`).addTo(map);
   });
@@ -1282,7 +1186,7 @@ function tryUnpaintTapAt(clientX, clientY) {
   }
   for (let fi = 0; fi < feats.length; fi++) {
     const f = feats[fi];
-    const fid = f.id !== undefined ? f.id : f.properties && f.properties.ogc_fid;
+    const fid = f.id !== undefined ? f.id : f.properties && f.properties.tile_id;
     if (fid != null && selectedSegments.has(fid)) {
       removeSegmentSelection(fid);
       return true;
@@ -1405,7 +1309,7 @@ function clearPendingIfUnreferenced(featureId) {
   const still = snapQueue.some(q => q.featureId === featureId);
   if (!still) {
     map.setFeatureState(
-      { source: 'segments', sourceLayer: 'update_score_v2', id: featureId },
+      { source: 'segments', sourceLayer: 'survey_segments', id: featureId },
       { pending: false }
     );
   }
@@ -1434,7 +1338,7 @@ function findBestCandidate(pt, opts) {
   for (let fi = 0; fi < features.length; fi++) {
     const f = features[fi];
     if (!f.geometry) continue;
-    const candFid = f.id !== undefined ? f.id : f.properties.ogc_fid;
+    const candFid = f.id !== undefined ? f.id : f.properties.tile_id;
     const candFidStr = candFid == null ? null : String(candFid);
     if (onlyFeatureIds && onlyFeatureIds.size && candFidStr != null && !onlyFeatureIds.has(candFidStr)) {
       continue;
@@ -1471,7 +1375,7 @@ function findBestCandidate(pt, opts) {
         }
 
         let score = dist * penalty * contMult;
-        const featureId = f.id !== undefined ? f.id : f.properties.ogc_fid;
+        const featureId = f.id !== undefined ? f.id : f.properties.tile_id;
         if (avoidRevisit && selectedSegments.has(featureId)) score *= AVOID_REVISIT_MULT;
 
         if (score < minScore) {
@@ -1511,7 +1415,7 @@ function commitSegment(featureId, props, edge, geoCenter, endpoints) {
   }
   if (edge) lastCommittedEdge = edge;
   map.setFeatureState(
-    { source: 'segments', sourceLayer: 'update_score_v2', id: featureId },
+    { source: 'segments', sourceLayer: 'survey_segments', id: featureId },
     { selected: true, pending: false }
   );
   updateBadge();
@@ -1554,7 +1458,7 @@ function removeSegmentCompletely(featureId) {
   }
   strokeOrderedSegmentIds = strokeOrderedSegmentIds.filter(x => x !== featureId);
   map.setFeatureState(
-    { source: 'segments', sourceLayer: 'update_score_v2', id: featureId },
+    { source: 'segments', sourceLayer: 'survey_segments', id: featureId },
     { selected: false, pending: false }
   );
   updateBadge();
@@ -1568,10 +1472,10 @@ function eraseNearPaintPoint(pt) {
   const seenFeat = new Set();
   for (let fi = 0; fi < features.length; fi++) {
     const f = features[fi];
-    const key = f.properties && f.properties.ogc_fid != null ? String(f.properties.ogc_fid) : fi + '_' + fi;
+    const key = f.properties && f.properties.tile_id != null ? String(f.properties.tile_id) : fi + '_' + fi;
     if (!f.geometry || seenFeat.has(key)) continue;
     seenFeat.add(key);
-    const fid = f.id !== undefined ? f.id : f.properties.ogc_fid;
+    const fid = f.id !== undefined ? f.id : f.properties.tile_id;
     if (fid === undefined || fid === null || !selectedSegments.has(fid)) continue;
     const lines = f.geometry.type === 'LineString'
       ? [f.geometry.coordinates]
@@ -1608,7 +1512,7 @@ function enqueuePaintSnap(pt) {
 
   if (!selectedSegments.has(cand.featureId)) {
     map.setFeatureState(
-      { source: 'segments', sourceLayer: 'update_score_v2', id: cand.featureId },
+      { source: 'segments', sourceLayer: 'survey_segments', id: cand.featureId },
       { pending: true }
     );
   }
@@ -1661,8 +1565,8 @@ function resampleUniform(pts, stepPx) {
 
 function querySegmentFeatureById(fid) {
   try {
-    const feats = map.querySourceFeatures('segments', { sourceLayer: 'update_score_v2' });
-    return feats.find(f => f.properties && String(f.properties.ogc_fid) === String(fid)) || null;
+    const feats = map.querySourceFeatures('segments', { sourceLayer: 'survey_segments' });
+    return feats.find(f => f.properties && String(f.properties.tile_id) === String(fid)) || null;
   } catch (err) {
     return null;
   }
@@ -1723,8 +1627,8 @@ function finishStrokePipeline() {
    SELECTION STATE
 ════════════════════════════════════════════════════════ */
 const selectedSegments = new Map();
-const segmentGeoCenter  = new Map(); // ogc_fid -> [lng, lat] midpoint of best-matched edge
-const segmentEndpoints  = new Map(); // ogc_fid -> [[lngA,latA], [lngB,latB]] LineString endpoints
+const segmentGeoCenter  = new Map(); // tile_id -> [lng, lat] midpoint of best-matched edge
+const segmentEndpoints  = new Map(); // tile_id -> [[lngA,latA], [lngB,latB]] LineString endpoints
 
 function updateBadge() {
   const n = selectedSegments.size;
@@ -1763,7 +1667,7 @@ function removeSegmentSelection(featureId) {
     }
   }
   map.setFeatureState(
-    { source: 'segments', sourceLayer: 'update_score_v2', id: featureId },
+    { source: 'segments', sourceLayer: 'survey_segments', id: featureId },
     { selected: false, pending: false }
   );
   updateBadge();
@@ -1779,7 +1683,7 @@ function undoLastSegment() {
   }
   selectedSegments.delete(id);
   map.setFeatureState(
-    { source: 'segments', sourceLayer: 'update_score_v2', id: id },
+    { source: 'segments', sourceLayer: 'survey_segments', id: id },
     { selected: false, pending: false }
   );
   updateBadge();
@@ -1796,7 +1700,7 @@ function clearSelection() {
   lastCommittedEdge = null;
   selectedSegments.forEach((_, id) => {
     map.setFeatureState(
-      { source: 'segments', sourceLayer: 'update_score_v2', id },
+      { source: 'segments', sourceLayer: 'survey_segments', id },
       { selected: false, pending: false }
     );
   });
@@ -1839,7 +1743,7 @@ const STRESS_FACTORS = [
 ];
 
 /* Survey state */
-let surveySegments   = [];  // [{ route_name, ogc_fids: [] }]
+let surveySegments   = [];  // [{ route_name, tile_ids: [] }]
 let surveyCur        = 0;   // current contiguous segment index
 let surveyAnswers    = [];  // [{ lts_perceived, safety_rating, stress_factors }] per segment
 let surveyActiveFids = new Set();
@@ -1993,15 +1897,15 @@ function buildContiguousSegments() {
     const props = selectedSegments.get(fid);
     const rn = (props && props.route_name) || null;
     if (!cur || cur.route_name !== rn) {
-      cur = { route_name: rn, ogc_fids: [] };
+      cur = { route_name: rn, tile_ids: [] };
       result.push(cur);
     }
-    cur.ogc_fids.push(Number(fid));
+    cur.tile_ids.push(Number(fid));
   }
   return result;
 }
 
-/* ── Fly map to a set of ogc_fids ── */
+/* ── Fly map to a set of tile_ids ── */
 function fitMapToSegmentFids(fids) {
   const centers = fids.map(id => segmentGeoCenter.get(id) || segmentGeoCenter.get(String(id))).filter(Boolean);
   if (!centers.length) return;
@@ -2033,7 +1937,7 @@ function fitMapToSegmentFids(fids) {
 function setSurveyActiveFeatureState(fids, active) {
   for (const fid of fids) {
     map.setFeatureState(
-      { source: 'segments', sourceLayer: 'update_score_v2', id: fid },
+      { source: 'segments', sourceLayer: 'survey_segments', id: fid },
       { surveyActive: active }
     );
   }
@@ -2044,9 +1948,9 @@ function activateSurveySegment(idx) {
   surveyActiveFids.clear();
   const seg = surveySegments[idx];
   if (!seg) return;
-  for (const fid of seg.ogc_fids) surveyActiveFids.add(fid);
-  setSurveyActiveFeatureState(seg.ogc_fids, true);
-  fitMapToSegmentFids(seg.ogc_fids);
+  for (const fid of seg.tile_ids) surveyActiveFids.add(fid);
+  setSurveyActiveFeatureState(seg.tile_ids, true);
+  fitMapToSegmentFids(seg.tile_ids);
 }
 
 /* ── Segment track ── */
@@ -2333,15 +2237,32 @@ function closeSurveySheet() {
 }
 
 /* ── Submit ── */
+
+/* The map and the stored response identify a road differently, on purpose.
+   tile_id numbers the segments of one build and is what MapLibre feature-state
+   needs; it means nothing once the road data is rebuilt. segment_id belongs to
+   the street and is what a response is stored against. selectedSegments already
+   holds each chosen feature's properties, which carry both. */
+function segmentIdsFor(tileIds) {
+  return tileIds
+    .map(id => {
+      const props = selectedSegments.get(id)
+                 || selectedSegments.get(Number(id))
+                 || selectedSegments.get(String(id));
+      return props && props.segment_id;
+    })
+    .filter(Boolean);
+}
+
 async function submitSurvey() {
   if (!validateSummary()) return;
 
   const payload = {
-    route_ogc_fids: strokeOrderedSegmentIds.map(Number),
+    segment_ids: segmentIdsFor(strokeOrderedSegmentIds),
     contiguous_segments: surveySegments.map((seg, i) => ({
       sequence_index: i,
       route_name: seg.route_name,
-      ogc_fids: seg.ogc_fids,
+      segment_ids: segmentIdsFor(seg.tile_ids),
       lts_perceived: surveyAnswers[i].lts_perceived,
       safety_rating: surveyAnswers[i].safety_rating,
       stress_factors: (surveyAnswers[i].stress_factors && surveyAnswers[i].stress_factors.length)
@@ -2361,7 +2282,7 @@ async function submitSurvey() {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 8000);
   try {
-    const res = await fetch('http://localhost:8000/api/submissions', {
+    const res = await fetch('/api/submissions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
