@@ -1,0 +1,11 @@
+{
+  "name": "ridescoredc-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
+}
