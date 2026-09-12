@@ -106,22 +106,38 @@ def restart_tile_server(root: Path) -> None:
     the thing serving it is up. So loading data restarts the tile server, rather
     than leaving a step for someone to remember.
     """
-    compose = subprocess.run(
-        ["docker", "compose", "ps", "--services"],
-        cwd=root, capture_output=True, text=True, check=False,
-    )
-    if compose.returncode == 0 and "martin" in compose.stdout.split():
-        print("\n  restarting the tile server, so it sees the new data")
-        subprocess.run(["docker", "compose", "restart", "martin"],
-                       cwd=root, check=False)
+    def compose(*args: str) -> list[str]:
+        done = subprocess.run(
+            ["docker", "compose", *args],
+            cwd=root, capture_output=True, text=True, check=False,
+        )
+        return done.stdout.split() if done.returncode == 0 else []
+
+    # `config` reads the file and `ps` reads reality. Both are needed: a stack
+    # can be half up -- the database running while the tile server is not is
+    # exactly how someone loads data before starting everything else.
+    defined = compose("config", "--services")
+    running = compose("ps", "--services")
+
+    if "martin" not in defined:
+        # A server, where Martin is a system service rather than a container.
+        print(
+            "\n  The tile server reads the database when it starts, so restart it\n"
+            "  before the new data appears on the map:\n\n"
+            "    sudo systemctl restart martin\n"
+        )
         return
 
-    # Not a Compose stack -- a server, where Martin is a system service.
-    print(
-        "\n  The tile server reads the database when it starts, so restart it\n"
-        "  before the new data appears on the map:\n\n"
-        "    sudo systemctl restart martin\n"
-    )
+    if "martin" not in running:
+        print(
+            "\n  The tile server is not running. It reads the database when it\n"
+            "  starts, so it will pick up this data by itself.\n"
+        )
+        return
+
+    print("\n  restarting the tile server, so it sees the new data")
+    sys.stdout.flush()
+    subprocess.run(["docker", "compose", "restart", "martin"], cwd=root, check=False)
 
 
 if __name__ == "__main__":
