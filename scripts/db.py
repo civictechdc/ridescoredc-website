@@ -1,8 +1,12 @@
 """Where the database is, and whether it is ready.
 
-Shared by `load_data.py` and `migrate.py`. Python with no dependencies, so the
-same commands run on a contributor's machine and on a server: `uv` is the only
-thing both already need, and the servers have no Node.
+Shared by `load_data.py` and `migrate.py`. Python with no dependencies, so that
+one implementation serves both a contributor's machine and a server.
+
+Python because the servers already run the API on it. Running these through
+`uv` does mean installing `uv` on a server that does not have it, which is a
+single binary and no system packages. The alternative was Node, which would be
+a whole runtime added for tooling alone.
 
 Settings are read from the environment first, then from the files. On a server
 the address arrives in the environment; on a contributor's machine it is in
