@@ -87,9 +87,41 @@ def main() -> int:
     if result.returncode != 0:
         return result.returncode
 
+    restart_tile_server(root)
+
     print("\n  Road data loaded. Create the survey tables next:")
     print("    uv run scripts/migrate.py        (or: npm run migrate)\n")
     return 0
+
+
+def restart_tile_server(root: Path) -> None:
+    """Make the tile server look at the database again.
+
+    Martin reads the database once, when it starts, and publishes what it finds.
+    A stack started before any data was loaded therefore publishes nothing, and
+    stays that way: the data appears, and the map shows no roads at all, with
+    every tile a 404 and no indication why.
+
+    That happens on every first run, because a database can only be filled after
+    the thing serving it is up. So loading data restarts the tile server, rather
+    than leaving a step for someone to remember.
+    """
+    compose = subprocess.run(
+        ["docker", "compose", "ps", "--services"],
+        cwd=root, capture_output=True, text=True, check=False,
+    )
+    if compose.returncode == 0 and "martin" in compose.stdout.split():
+        print("\n  restarting the tile server, so it sees the new data")
+        subprocess.run(["docker", "compose", "restart", "martin"],
+                       cwd=root, check=False)
+        return
+
+    # Not a Compose stack -- a server, where Martin is a system service.
+    print(
+        "\n  The tile server reads the database when it starts, so restart it\n"
+        "  before the new data appears on the map:\n\n"
+        "    sudo systemctl restart martin\n"
+    )
 
 
 if __name__ == "__main__":
