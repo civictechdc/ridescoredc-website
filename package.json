@@ -6,7 +6,11 @@
     "check-env": "node scripts/check-env.mjs",
     "dev": "vite",
     "stack": "node scripts/check-env.mjs && docker compose up",
-    "stack:down": "docker compose down"
+    "stack:down": "docker compose down",
+    "data": "uv run scripts/load_data.py",
+    "migrate": "uv run scripts/migrate.py",
+    "migrate:list": "uv run scripts/migrate.py --list",
+    "setup": "npm run data && npm run migrate"
   },
   "devDependencies": {
     "vite": "^7.0.0"
