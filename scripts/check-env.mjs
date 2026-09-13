@@ -73,8 +73,9 @@ export function checkEnv(dir = process.cwd()) {
 
     for (const f of ignored) {
       errors.push(
-        `${name} is set in ${f}, which does not read it, so the value is ignored.\n` +
-          `    Move it to ${spec.home}. It is used by ${spec.used_by}.`
+        `${name} is in ${f}, but nothing reads ${name} from there, so the value\n` +
+          `    you set is ignored and the default is used instead.\n` +
+          `    Move the line to ${spec.home}. ${name} is used by ${spec.used_by}.`
       );
     }
 
@@ -114,9 +115,9 @@ export function reportEnv(dir = process.cwd(), { quiet = false } = {}) {
 
   if (errors.length) {
     throw new Error(
-      `\n\nSettings are in files that do not read them:\n\n` +
+      `\n\nSome settings are in the wrong file, so they have no effect:\n\n` +
         errors.map((e) => `  - ${e}`).join('\n\n') +
-        `\n\nWhich file is read by what:\n` +
+        `\n\nWhich program reads which file:\n` +
         `  .env        npm run dev, and docker compose\n` +
         `  .env.local  npm run dev only, and it overrides .env\n` +
         `  api/.env    the containers themselves\n`
