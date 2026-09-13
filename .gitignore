@@ -1,5 +1,7 @@
 .env
 pg_data/
+# Other database directories, for anyone who points DB_DATA_DIR at one.
+pg_data*/
 __pycache__/
 .pytest_cache/
 .ruff_cache/

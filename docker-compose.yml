@@ -55,8 +55,19 @@ services:
     environment:
       - POSTGRES_DB=db
       - POSTGRES_USER=postgres
+    # Published so that psql and the data-package loader can reach the database
+    # from your machine. The app and Martin do not use this port: they reach the
+    # database inside Compose's own network, by the service name "db".
+    #
+    # Set DB_PORT if 5432 is already taken -- by a Postgres you installed, or by
+    # another project's container.
     ports:
-      - 5432:5432
+      - "${DB_PORT:-5432}:5432"
     volumes:
-      # persist PostgreSQL data in a local directory outside of the docker 
-      - ./pg_data:/var/lib/postgresql/data
+      # The database keeps its files in a directory on your machine rather than
+      # inside the container, so they survive the container being removed.
+      #
+      # Set DB_DATA_DIR to put them somewhere else: to keep more than one
+      # database side by side, or to start from an empty one without deleting
+      # the directory you already have.
+      - ${DB_DATA_DIR:-./pg_data}:/var/lib/postgresql/data

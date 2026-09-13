@@ -1,9 +1,16 @@
+# Martin serves map tiles. It publishes only what the serving schema exposes.
+#
+# The road data itself lives in the data schema and is deliberately not listed
+# here: what a map shows is a presentation decision, and the serving schema is
+# where those decisions are written. Publishing the data schema directly would
+# put every column of every table on the open internet, including scores that
+# the survey must not show its respondents.
 postgres:
   connection_string: ${DATABASE_URL}
   auto_publish:
     tables:
       from_schemas:
-        - public
+        - serving
     functions:
       from_schemas:
-        - public
+        - serving
