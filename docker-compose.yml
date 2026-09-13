@@ -8,6 +8,9 @@ services:
       - "8000:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # The pages, served straight from here. Read-only: nginx has no business
+      # writing to them. An edit shows up on reload, with nothing to restart.
+      - ./frontend:/usr/share/nginx/html:ro
     depends_on:
       - fastapi
       - martin
@@ -19,6 +22,10 @@ services:
     restart: unless-stopped
     volumes:
       - ./api:/app
+      # The pages, mounted so that /app/../frontend resolves the same way here
+      # as it does in a checkout and on the servers. Editing a page takes effect
+      # on reload; no restart, and nothing is copied into the image.
+      - ./frontend:/frontend
     # --reload so an edit to api/ takes effect without restarting the
     # container. Local only: the servers do not start the service through
     # Compose, so a service that restarts itself on every file change cannot

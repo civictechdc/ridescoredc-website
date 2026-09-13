@@ -7,15 +7,13 @@ from typing import List, Optional
 import psycopg
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
-# Resolve bundled files relative to this module, not the current working
-# directory, so the app works whether it's launched from /app (Docker) or
-# the repo root (e.g. `pytest api/tests/` in CI).
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# This service answers two things: it records a survey response, and it says
+# whether it can reach the database. It serves no pages -- nginx does that
+# directly -- and it does not serve the map, which the browser gets from Martin.
 
 
 def get_conn():
@@ -170,6 +168,3 @@ def health():
         return {"status": "ok"}
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc))
-
-
-app.mount("/", StaticFiles(directory=os.path.join(BASE_DIR, "static"), html=True), name="static")

@@ -7,6 +7,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css' />
 <script src='https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js'></script>
+
+<!-- Shared with the survey page. Absolute paths, so the same tags work from
+     any page whatever folder it sits in. This page additionally loads the
+     scored tile source below; the survey page does not, and that is what keeps
+     scores off it. -->
+<script src="/src/shared/config.js"></script>
+<script src="/src/shared/basemap.js"></script>
+<script src="/src/shared/crashes.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -334,26 +342,6 @@ function toggleSettings() {
   document.getElementById('settings-panel').classList.toggle('open', settingsOpen);
 }
 
-let attributionOpen = false;
-function toggleAttribution() {
-  attributionOpen = !attributionOpen;
-  document.getElementById('attribution-panel').classList.toggle('open', attributionOpen);
-}
-
-let imageryOn = false;
-function toggleImagery() {
-  imageryOn = !imageryOn;
-  document.getElementById('imageryBtn').classList.toggle('active', imageryOn);
-  map.setLayoutProperty('ortho-2025-layer', 'visibility', imageryOn ? 'visible' : 'none');
-}
-
-let accidentsOn = false;
-function toggleAccidents() {
-  accidentsOn = !accidentsOn;
-  document.getElementById('accidentsBtn').classList.toggle('active', accidentsOn);
-  map.setLayoutProperty('crashes_heatmap', 'visibility', accidentsOn ? 'visible' : 'none');
-  map.setLayoutProperty('crashes', 'visibility', accidentsOn ? 'visible' : 'none');
-}
 
 /* ── Slider refs & update ── */
 const speedlimit_slider = document.getElementById('i_speedlimit');
@@ -383,24 +371,11 @@ function RefreshZone(i_ridescore, i_speedlimit, i_numlanes, i_facility, i_functi
 }
 
 /* ── Map ── */
-const map = new maplibregl.Map({
-  container: 'map',
-  style: 'https://tiles.openfreemap.org/styles/bright',
-  center: [-77.02515, 38.91668],
-  zoom: 15
-});
+const map = RideScore.createMap('map');
 
 map.on('style.load', () => {
 
-  map.addSource('dc-ortho-2025', {
-    type: 'raster',
-    tiles: ['https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/Ortho2025_WebMercator/MapServer/tile/{z}/{y}/{x}'],
-    tileSize: 256
-  });
-  map.addLayer({
-    id: 'ortho-2025-layer', type: 'raster', source: 'dc-ortho-2025',
-    layout: { visibility: 'none' }
-  });
+  RideScore.addImagery(map);
 
   map.addSource('my-vector-source', {
     type: 'vector',
@@ -417,100 +392,7 @@ map.on('style.load', () => {
     }
   });
 
-        map.addSource('points-source', {
-	    type: 'vector',
-	    tiles: [ //set following values to defaults in slider?
-  `${location.origin}/tiles/crashes/{z}/{x}/{y}`
-],
-	    minzoom: 1,
-	    maxzoom: 14
-	});
-
-
-    map.addLayer({
-        'id': 'crashes',
-        'type': 'circle',
-        'source': 'points-source',
-    	'source-layer': 'crashes',
-	'minzoom': 15,
-        'paint': {
-            'circle-radius': 4,
-            'circle-color': '#CC3232',
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#ffffff',
-	    'circle-opacity': 0.7
-        },
-    	'layout': { visibility: 'none' },
-    });
-
-        map.addLayer(
-            {
-		'layout': { visibility: 'none' },
-                'id': 'crashes_heatmap',
-                'type': 'heatmap',
-                'source': 'points-source',
-		'source-layer': 'crashes',
-                //'maxzoom': 9,
-                'paint': {
-                    // Increase the heatmap weight based on frequency and property magnitude
-                    'heatmap-weight': [
-                        'interpolate',
-                        ['linear'],
-  			['+', ['get', 'MAJORINJURIES_BICYCLIST'], ['*', ['get', 'FATAL_BICYCLIST'], 5]],
-                        0, 0,
-                        20, 1
-                    ],
-                    // Increase the heatmap color weight weight by zoom level
-                    // heatmap-intensity is a multiplier on top of heatmap-weight
-                    'heatmap-intensity': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        0, 1,
-                        15, 3
-                    ],
-                    // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
-                    // Begin color ramp at 0-stop with a 0-transparency color
-                    // to create a blur-like effect.
-                    'heatmap-color': [
-                        'interpolate',
-                        ['linear'],
-                        ['heatmap-density'],
-                        0,
-                        'rgba(33,102,172,0)',
-                        0.2,
-                        'rgb(103,169,207)',
-                        0.4,
-                        'rgb(209,229,240)',
-                        0.6,
-                        'rgb(253,219,199)',
-                        0.8,
-                        'rgb(239,138,98)',
-                        1,
-                        'rgb(178,24,43)'
-                    ],
-                    // Adjust the heatmap radius by zoom level
-                    'heatmap-radius': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        0, 2,
-			9, 3,
-                        15, 15
-                    ],
-                    // Transition from heatmap to circle layer by zoom level
-                    'heatmap-opacity': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-			0, 0.2,
-			8, 0.2,
-                        12, 1,
-                        18, 0
-                    ]
-                }
-            }
-        );
+  RideScore.addCrashes(map);
 
   /* ── Popup on click ── */
   map.on('click', 'update_score', (e) => {
@@ -536,28 +418,6 @@ map.on('style.load', () => {
 
   map.on('mouseenter', 'update_score', () => { map.getCanvas().style.cursor = 'pointer'; });
   map.on('mouseleave', 'update_score', () => { map.getCanvas().style.cursor = ''; });
-
-  map.on('click', 'crashes', (e) => {
-    const p = e.features[0].properties;
-    const html = `
-      <div style="font-family:'Inter',sans-serif">
-        <strong style="font-size:13px">Accident Summary</strong>
-        <table style="margin-top:6px;font-size:11px;border-collapse:collapse;width:100%">
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Address</td><td><strong>${p.address}</strong></td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Date and time</td><td>${p.report_date}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Bicyclist fatalities</td><td>${p.fatal_bicyclist}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Bicyclist major injuries</td><td>${p.major_injuries_bicyclist}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Bicyclist minor injuries</td><td>${p.minor_injuries_bicyclist}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Total bicycles involved</td><td>${p.total_bicycles}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0">Total vehicles involved</td><td>${p.total_vehicles}</td></tr>
-          <tr><td style="color:#64748b;padding:2px 8px 2px 0"> Total pedestrians involved</td><td>${p.total_pedestrians}</td></tr>
-        </table>
-      </div>`;
-    new maplibregl.Popup({maxWidth:'400px'}).setLngLat(e.lngLat).setHTML(html).addTo(map);
-  });
-
-  map.on('mouseenter', 'crashes', () => { map.getCanvas().style.cursor = 'pointer'; });
-  map.on('mouseleave', 'crashes', () => { map.getCanvas().style.cursor = ''; });
 
 
 
