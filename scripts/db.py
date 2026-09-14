@@ -93,8 +93,12 @@ def database_urls(root: Path | None = None) -> dict[str, str]:
         # on whichever port Compose publishes.
         host = "127.0.0.1"
         port = found.get("DB_PORT", DEFAULT_PORT)
-    elif found.get("DB_PORT"):
+    elif port is None and found.get("DB_PORT"):
+        # An address with no port of its own. DB_PORT is the best guess.
         port = found["DB_PORT"]
+    # An address that names its own port keeps it. DB_PORT describes where
+    # Compose publishes the database, and says nothing about a database
+    # somewhere else -- so pointing DATABASE_URL at another one has to win.
 
     userinfo = parts.username or ""
     if parts.password:
