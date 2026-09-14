@@ -43,6 +43,25 @@ const SETTINGS = {
     home: 'api/.env',
     used_by: 'the database container',
   },
+  // Overrides for where published road data comes from. The defaults are in
+  // scripts/data_source.py; these are for pointing one machine somewhere else,
+  // usually at data you built yourself.
+  DATA_RELEASES: {
+    home: '.env',
+    used_by: 'npm run data, to decide where published data is fetched from',
+  },
+  DATA_PACKAGE: {
+    home: '.env',
+    used_by: 'npm run data, as the name of the published data file',
+  },
+  DATA_BUNDLE: {
+    home: '.env',
+    used_by: 'npm run data, as the name of the published serving file',
+  },
+  DATA_LOADER: {
+    home: '.env',
+    used_by: 'npm run data, as the program that does the loading',
+  },
 };
 
 function parse(file) {
