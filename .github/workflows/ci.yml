@@ -10,6 +10,14 @@ on:
       - develop
       - main
 
+# One deploy at a time. Merging two pull requests in quick succession would
+# otherwise run two deploys against the same server, each pulling and each
+# applying migrations. Queued rather than cancelled: a deploy that has started
+# should finish.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   STG_SERVER: dev.ridescoredc.com
   STG_USER: fastapi
@@ -43,9 +51,47 @@ jobs:
         env:
           DATABASE_URL: postgresql://mock:mock@localhost/mock
 
+  # Prove the migrations apply, which the tests cannot: they run against a mocked
+  # database and would not notice a migration that does not parse. A deploy now
+  # applies migrations, so a broken one would stop a deploy rather than be found
+  # by a person.
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: db
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+    env:
+      # Not the Compose service name, so scripts/db.py leaves the address alone.
+      # The same path a server takes.
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/db
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: apply to an empty database
+        run: uv run scripts/migrate.py
+      - name: the tables the API writes to exist
+        run: |
+          psql -h 127.0.0.1 -U postgres -d db -c "
+            select 1 from app.survey_submissions limit 0;
+            select 1 from app.survey_contiguous_segments limit 0;
+            select 1 from app.survey_granular_segments limit 0;"
+      - name: applying again changes nothing
+        run: uv run scripts/migrate.py
+
   stage:
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, migrations]
     if: github.ref == 'refs/heads/develop'
     environment:
       name: staging
@@ -65,7 +111,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, migrations]
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
