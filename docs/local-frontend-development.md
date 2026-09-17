@@ -15,6 +15,25 @@
 - **An editor** — <https://code.visualstudio.com> if you have no preference
 - **A GitHub account** — <https://github.com/signup>
 
+### Where to type the commands
+
+| | open |
+|---|---|
+| **macOS** | Terminal, in Applications > Utilities |
+| **Linux** | your terminal application |
+| **Windows** | Windows Terminal, or PowerShell from the Start menu |
+| **Windows with WSL** | the terminal of your WSL distribution |
+
+In VS Code, **View > Terminal** opens one on all of them.
+
+Most commands in these guides are `git`, `node` and `npm`, which are the same everywhere.
+Where a command differs, two versions are given: one for **macOS, Linux and WSL**, one for
+**Windows PowerShell**. Command Prompt is not covered.
+
+**In WSL, keep the repository inside the WSL file system** — a path under `~`, not under
+`/mnt/c`. `npm install` and the development server are much slower across the Windows
+boundary.
+
 Check the first two:
 
 ```bash
@@ -28,7 +47,8 @@ You work on a **fork**, which is your own copy on GitHub, and propose changes ba
 a pull request. You do not need write access to the project.
 
 1. Open <https://github.com/civictechdc/ridescoredc-website>, click **Fork**, then
-   **Create fork**.
+   **Create fork**. Leave **Copy the `develop` branch only** checked — `develop` is the
+   branch the next step works from.
 2. Clone your fork, replacing `YOUR-USERNAME`:
 
 ```bash
@@ -46,6 +66,11 @@ git checkout develop
 git checkout -b feature/short-name
 ```
 
+The first command switches to `develop`; the second creates your branch from whatever
+branch you are on, so the order matters. A fresh clone already starts on `develop`, so the
+first command usually changes nothing — run it anyway and your branch can never start from
+`main` by accident.
+
 ## Step 3 — Install the Vite development server
 
 ```bash
@@ -58,8 +83,16 @@ with no build step, so the files you edit are exactly the files the servers publ
 
 ## Step 4 — Configure where the map data comes from
 
+**macOS, Linux and WSL**
+
 ```bash
 cp .env.example .env
+```
+
+**Windows (PowerShell)**
+
+```powershell
+Copy-Item .env.example .env
 ```
 
 The relevant line in the copied file already points Vite to the development server:
@@ -129,7 +162,7 @@ text or the element ID you want rather than reading top to bottom.
 
 ## Step 8 — Check and test your changes before opening a Pull Request
 
-- All pages still load without errors in the browser console (F12)
+- All pages still load without errors in the browser console (F12, or Cmd+Option+I on macOS)
 - The behavior you changed works, and everything else still works
 - You did not commit `.env`, `node_modules/`, or a database directory
 

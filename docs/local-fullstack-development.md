@@ -37,6 +37,11 @@ uv --version
 You do not need to install Python, PostgreSQL, or the pipeline. `uv` fetches what each
 command needs in an isolated environment.
 
+**On Windows**, Docker Desktop runs the containers on WSL2, so WSL is present either way.
+Working in a WSL terminal is the smoother path, and makes every command below the macOS
+and Linux one; in Docker Desktop, enable **Settings > Resources > WSL integration** for
+your distribution. PowerShell versions are given for anyone who would rather stay there.
+
 ## Step 2 — Configuration
 
 Two files are used for configuration, split by who needs the setting:
@@ -48,8 +53,16 @@ Two files are used for configuration, split by who needs the setting:
 
 The question is always: does the running API need this, or only my laptop?
 
+**macOS, Linux and WSL**
+
 ```bash
 cp api/.env.example api/.env
+```
+
+**Windows (PowerShell)**
+
+```powershell
+Copy-Item api/.env.example api/.env
 ```
 
 You already created `.env` in the front-end guide. Check the settings:
@@ -84,10 +97,22 @@ This command checks the settings, then uses `docker compose up` to start the doc
 
 In another terminal, check the API is up:
 
+**macOS, Linux and WSL**
+
 ```bash
 curl http://localhost:8000/health
 # {"status":"ok"}
 ```
+
+**Windows (PowerShell)**
+
+```powershell
+curl.exe http://localhost:8000/health
+# {"status":"ok"}
+```
+
+Spell it `curl.exe`. Windows PowerShell has its own `curl`, which is a different program
+and does not understand these options.
 
 The database is empty at this point. There are no roads yet.
 
@@ -174,11 +199,25 @@ Open **<http://localhost:8000/survey/>** — plain map for user feedback.
 
 Test from the command line:
 
+**macOS, Linux and WSL**
+
 ```bash
 for t in update_score survey_segments crashes; do
   echo -n "$t "
   curl -s -o /dev/null -w '%{http_code}\n' "http://localhost:8000/tiles/$t/14/4684/6265"
 done
+# update_score 200
+# survey_segments 200
+# crashes 200
+```
+
+**Windows (PowerShell)**
+
+```powershell
+foreach ($t in 'update_score', 'survey_segments', 'crashes') {
+  $code = curl.exe -s -o NUL -w '%{http_code}' "http://localhost:8000/tiles/$t/14/4684/6265"
+  "$t $code"
+}
 # update_score 200
 # survey_segments 200
 # crashes 200
@@ -248,8 +287,24 @@ the open internet.
 
 ## Looking at the data
 
+**macOS, Linux and WSL**
+
 ```bash
 PGPASSWORD=localdev psql -h 127.0.0.1 -p 5432 -U postgres -d db
+```
+
+**Windows (PowerShell)**
+
+```powershell
+$env:PGPASSWORD = 'localdev'
+psql -h 127.0.0.1 -p 5432 -U postgres -d db
+```
+
+This needs `psql` installed on your machine. If you would rather not install it, the
+database container carries its own copy, which works everywhere:
+
+```bash
+docker compose exec db psql -U postgres -d db
 ```
 
 ```sql
@@ -272,9 +327,19 @@ mapping library needs one, but that number is never stored.
 
 ## Starting over
 
+**macOS, Linux and WSL**
+
 ```bash
 npm run stack:down
 rm -rf pg_data
+npm run stack
+```
+
+**Windows (PowerShell)**
+
+```powershell
+npm run stack:down
+Remove-Item -Recurse -Force pg_data
 npm run stack
 ```
 
