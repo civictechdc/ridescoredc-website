@@ -32,7 +32,13 @@ Check:
 ```bash
 docker --version
 uv --version
+docker info
 ```
+
+**Start Docker Desktop before going further.** `docker --version` answers even when Docker
+is not running; `docker info` is the one that talks to it, and it fails until Docker
+Desktop is started. On Windows and macOS, the whale icon near the clock shows when it is
+ready. Without it, Step 3 fails with a low-level connection error.
 
 You do not need to install Python, PostgreSQL, or the pipeline. `uv` fetches what each
 command needs in an isolated environment.
@@ -74,6 +80,22 @@ npm run check-env
 It prints what settings are in effect, and fails if anything is misplaced.
 
 ### If port 5432 for the database is taken
+
+To find out whether anything already holds the port:
+
+**macOS, Linux and WSL**
+
+```bash
+lsof -i :5432
+```
+
+**Windows (PowerShell)**
+
+```powershell
+Get-NetTCPConnection -LocalPort 5432 -ErrorAction SilentlyContinue
+```
+
+No output means the port is free and this section does not apply to you.
 
 If another running PostgreSQL instance is already using port 5432, then in `.env` set:
 
@@ -128,6 +150,10 @@ This command does two things, which could be run separately if needed:
 
 **`npm run migrate`** creates the survey tables.
 
+---
+
+> **The rest of Step 4 is reference material, not steps to follow now.** Skip to Step 5
+> unless you need one of these.
 
 ### Loading different data versions
 

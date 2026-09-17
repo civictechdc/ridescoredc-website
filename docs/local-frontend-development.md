@@ -120,7 +120,13 @@ This command prints the settings that are used and the local address where the w
   ➜  Local:   http://localhost:5173/
 ```
 
-Make sure that the `tiles and API` line points to the Ride Score DC development server. Leave the command running in its own terminal while you work in another terminal.
+**If the `settings in effect` block does not appear, you have no `.env`** — go back to
+Step 4. The `tiles and API` line is the same either way, because the address in
+`.env.example` is also the built-in default, so that line alone does not tell you whether
+Step 4 worked.
+
+Leave this command running and work in a second terminal. In VS Code, the **+** in the
+terminal panel opens one; otherwise open a second terminal window.
 
 ## Step 6 — Check the website works
 
