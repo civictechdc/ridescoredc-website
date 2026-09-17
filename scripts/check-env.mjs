@@ -16,6 +16,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const FILES = ['.env', '.env.local', 'api/.env'];
 
@@ -158,7 +159,13 @@ export function reportEnv(dir = process.cwd(), { quiet = false } = {}) {
 }
 
 // Run directly rather than imported.
-if (import.meta.url === `file://${process.argv[1]}`) {
+//
+// Compare paths, not a URL built by joining strings. On Windows process.argv[1] is
+// C:\...\check-env.mjs while import.meta.url is file:///C:/.../check-env.mjs, so
+// `file://` + argv[1] never equals it and this block never runs: `npm run check-env`
+// prints nothing and exits 0, and `npm run stack` -- which is this script && docker
+// compose up -- starts without having checked anything at all.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     reportEnv();
     console.log('  settings are in the right files\n');
