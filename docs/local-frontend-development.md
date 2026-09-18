@@ -198,6 +198,9 @@ startup. If it names the shared server and your changes did not touch the map re
 **A change does not appear.** Confirm you edited the file under `frontend/`, and that
 the terminal running `npm run dev` has not stopped.
 
+**A change to `.env` has no effect.** `npm run dev` reads that file once, when it starts.
+Stop it with `Ctrl-C` and start it again.
+
 **Port 5173 is in use.** `npm run dev -- --port 5174`.
 
 **You want to work without the shared server.** See `local-fullstack-development.md`.

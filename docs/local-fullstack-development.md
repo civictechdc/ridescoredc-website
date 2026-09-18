@@ -97,7 +97,9 @@ Get-NetTCPConnection -LocalPort 5432 -ErrorAction SilentlyContinue
 
 No output means the port is free and this section does not apply to you.
 
-If another running PostgreSQL instance is already using port 5432, then in `.env` set:
+If another running PostgreSQL instance is already using port 5432, then in `.env`
+uncomment the `DB_PORT` line and change the number. Unlike `VITE_UPSTREAM`, this line
+starts out commented, so here you are adding a setting rather than changing one:
 
 ```
 DB_PORT=5544
@@ -255,15 +257,26 @@ draws the survey's plain map, `crashes` draws crash locations.
 ## Step 6 — Optional: a browser that reloads itself
 
 The stack does not reload the browser when you edit a page. If you want that, run Vite
-alongside it. In `.env` set:
+alongside it.
+
+`.env` already has an active `VITE_UPSTREAM` line, from Step 4 of the front-end guide.
+**Change that line — do not add a second one.** `.env.example` carries both addresses with
+one commented out, so the edit is swapping which is which:
 
 ```
+# VITE_UPSTREAM=https://dev.ridescoredc.com
 VITE_UPSTREAM=http://localhost:8000
 ```
+
+Two active `VITE_UPSTREAM` lines are not reported as a mistake: the last one silently
+wins, and `npm run check-env` shows only that one.
 
 ```bash
 npm run dev
 ```
+
+**`npm run dev` reads `.env` once, when it starts.** After changing the file, stop it with
+`Ctrl-C` and start it again — editing `.env` while it runs has no effect.
 
 That gives you a second address, `http://localhost:5173`, serving the same files from the
 same folder:
