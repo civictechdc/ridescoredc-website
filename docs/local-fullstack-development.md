@@ -268,8 +268,9 @@ one commented out, so the edit is swapping which is which:
 VITE_UPSTREAM=http://localhost:8000
 ```
 
-Two active `VITE_UPSTREAM` lines are not reported as a mistake: the last one silently
-wins, and `npm run check-env` shows only that one.
+Two active `VITE_UPSTREAM` lines with different values are refused: the last one would
+win and the first would do nothing, so `npm run dev`, `npm run stack` and
+`npm run check-env` all stop and say so.
 
 ```bash
 npm run dev

@@ -65,20 +65,27 @@ const SETTINGS = {
   },
 };
 
+// `found` is what the file amounts to, with a later line replacing an earlier one
+// exactly as every reader of these files does it. `seen` keeps all of them, so that
+// a setting written twice can be reported rather than half of it disappearing.
 function parse(file) {
   const found = new Map();
-  if (!existsSync(file)) return found;
+  const seen = new Map();
+  if (!existsSync(file)) return { found, seen };
   for (const line of readFileSync(file, 'utf8').split('\n')) {
     const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
     if (!m) continue;
     const value = m[2].trim().replace(/\s+#.*$/, '').replace(/^(['"])(.*)\1$/, '$2').trim();
     found.set(m[1], value);
+    if (!seen.has(m[1])) seen.set(m[1], []);
+    seen.get(m[1]).push(value);
   }
-  return found;
+  return { found, seen };
 }
 
 export function checkEnv(dir = process.cwd()) {
-  const contents = new Map(FILES.map((f) => [f, parse(resolve(dir, f))]));
+  const parsed = new Map(FILES.map((f) => [f, parse(resolve(dir, f))]));
+  const contents = new Map(FILES.map((f) => [f, parsed.get(f).found]));
   const errors = [];
   const warnings = [];
   const resolved = {};
@@ -86,6 +93,21 @@ export function checkEnv(dir = process.cwd()) {
   for (const [name, spec] of Object.entries(SETTINGS)) {
     const where = FILES.filter((f) => contents.get(f).has(name));
     if (where.length === 0) continue;
+
+    // Written more than once in one file, with different values. The last line wins
+    // and the earlier ones do nothing, while the file reads as though both apply --
+    // which is what happens when a line meant to be edited gets added below instead.
+    for (const f of where) {
+      const lines = parsed.get(f).seen.get(name);
+      if (lines.length > 1 && new Set(lines).size > 1) {
+        errors.push(
+          `${name} is set more than once in ${f}, to different values:\n` +
+            lines.map((v) => `      ${name}=${v}`).join('\n') +
+            `\n    The last one wins and the rest do nothing. Keep a single line,\n` +
+            `    and comment out or delete the others.`
+        );
+      }
+    }
 
     const ok = [spec.home, ...(spec.alsoWorksIn ?? [])];
     const ignored = where.filter((f) => !ok.includes(f));
@@ -135,7 +157,7 @@ export function reportEnv(dir = process.cwd(), { quiet = false } = {}) {
 
   if (errors.length) {
     throw new Error(
-      `\n\nSome settings are in the wrong file, so they have no effect:\n\n` +
+      `\n\nSome settings will not take effect as written:\n\n` +
         errors.map((e) => `  - ${e}`).join('\n\n') +
         `\n\nWhich program reads which file:\n` +
         `  .env        npm run dev, and docker compose\n` +
