@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>DC Bike Safety Map: Ride it</title>
+<meta property="og:description" content="Pick a start and an end, and see how stressful the bike ride is, street by street." />
+<meta charset='utf-8'>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel='stylesheet' href='https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css' />
+<script src='https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js'></script>
+
+<!-- Shared with the other pages. config.js must load first. This page draws
+     no tiles of its own: routes come from the street network loaded below. -->
+<script src="/src/shared/config.js"></script>
+<script src="/src/shared/basemap.js"></script>
+<script src="/src/shared/crashes.js"></script>
+<script src="/ride/ride.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; color: #1a1a2e; }
+
+  button, a { font-family: inherit; }
+  button:focus-visible, a:focus-visible {
+    outline: 2px solid #2563eb; outline-offset: 2px;
+  }
+
+  /* ── Logo top-right ── */
+  #logo-box {
+    position: fixed; top: 12px; right: 12px; z-index: 900;
+    background: #1a1a2e; color: #fff;
+    border-radius: 8px; padding: 6px 12px;
+    display: flex; align-items: center; gap: 7px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    font-size: 12px; font-weight: 600; letter-spacing: .01em;
+    text-decoration: none;
+    transition: background .15s;
+  }
+  #logo-box:hover { background: #2d2d4e; }
+  #logo-box svg { flex-shrink: 0; }
+
+  /* ── Map ── */
+  #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+
+  /* ── Side panel (a bottom sheet on phones) ── */
+  #ride-panel {
+    position: fixed; top: 12px; left: 12px; z-index: 800;
+    width: 340px; max-height: calc(100vh - 24px); overflow-y: auto;
+    background: #fff; border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.14);
+    padding: 16px 18px 18px;
+  }
+  #ride-panel h1 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+  #ride-panel .lede { margin: 0 0 12px; font-size: 12px; color: #64748b; line-height: 1.45; }
+  #ride-panel h2 {
+    margin: 16px 0 8px; font-size: 11px; font-weight: 600; color: #64748b;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+
+  .status {
+    font-size: 12px; line-height: 1.45; color: #334155;
+    background: #f8fafc; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px;
+  }
+  .status.error { background: #fef2f2; color: #991b1b; }
+  .status .retry { margin-top: 8px; display: block; }
+
+  /* Start and End rows */
+  .points { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .points li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: #334155;
+    border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 10px;
+  }
+  .points li.current { border-color: #1a1a2e; box-shadow: 0 0 0 1px #1a1a2e inset; }
+  .points .tag {
+    font-size: 10px; font-weight: 700; color: #fff; border-radius: 4px; padding: 3px 6px;
+    min-width: 40px; text-align: center;
+  }
+  .points .val { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .points .val.empty { color: #94a3b8; }
+
+  .ctrl-btn {
+    background: #fff; border: 1px solid #d1d5db;
+    color: #334155; border-radius: 8px;
+    padding: 8px 13px; font: 500 12px/1 'Inter', sans-serif;
+    cursor: pointer; transition: all .15s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .ctrl-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+  .row-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+  /* Shortest / Lowest stress, styled like the main map's mode switcher */
+  .mode-switcher {
+    display: flex; border-radius: 6px; overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+  .mode-switcher button {
+    flex: 1; padding: 8px 6px;
+    font: 500 12px/1.3 'Inter', sans-serif;
+    border: none; cursor: pointer;
+    background: #fff; color: #64748b;
+    transition: all .15s;
+  }
+  .mode-switcher button + button { border-left: 1px solid #e2e8f0; }
+  .mode-switcher button .km { display: block; font-size: 15px; font-weight: 700; color: #1a1a2e; }
+  .mode-switcher button[aria-pressed="true"] { background: #1a1a2e; color: #cbd5e1; }
+  .mode-switcher button[aria-pressed="true"] .km { color: #fff; }
+  .mode-switcher button:not([aria-pressed="true"]):hover { background: #f8fafc; }
+  .mode-switcher button:focus-visible { outline-offset: -3px; }
+  .note { font-size: 11px; color: #64748b; line-height: 1.4; margin: 6px 0 0; }
+
+  /* Stress breakdown bar */
+  .bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #e2e8f0; }
+  .bar span { display: block; height: 100%; }
+  .legend { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+  .legend li { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #334155; }
+  .legend .sw { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .legend .name { flex: 1; }
+  .legend .m { font-weight: 600; color: #1a1a2e; font-variant-numeric: tabular-nums; }
+  .legend .pct { color: #94a3b8; font-weight: 500; }
+
+  /* Hostile stretches */
+  .stretches { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .stretches button {
+    width: 100%; display: flex; align-items: center; gap: 8px; text-align: left;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 7px 10px; cursor: pointer; font-size: 12px; color: #334155;
+    transition: all .15s;
+  }
+  .stretches button:hover { background: #fef2f2; border-color: #fca5a5; }
+  .stretches .dot { width: 8px; height: 8px; border-radius: 50%; background: #e5484d; flex-shrink: 0; }
+  .stretches .name { flex: 1; min-width: 0; }
+  .stretches .m { font-weight: 600; color: #1a1a2e; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .stretches .go { color: #64748b; font-size: 11px; white-space: nowrap; }
+  .none { font-size: 12px; color: #166534; background: #f0fdf4; border-radius: 6px; padding: 8px 10px; margin: 0; }
+
+  /* Ride it link */
+  .ride-link {
+    margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 11px 12px; border-radius: 6px;
+    background: #1a1a2e; color: #fff; text-decoration: none; text-align: center;
+    font: 600 13px/1.3 'Inter', sans-serif;
+    transition: background .15s;
+  }
+  .ride-link:hover { background: #2d2d4e; }
+  .ride-link svg { flex-shrink: 0; }
+
+  .back {
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 14px;
+    font-size: 12px; font-weight: 500; color: #334155; text-decoration: none;
+    border: 1px solid #d1d5db; border-radius: 8px; padding: 6px 10px;
+  }
+  .back:hover { background: #f8fafc; border-color: #94a3b8; }
+
+  [hidden] { display: none !important; }
+
+  /* Start and End markers */
+  .pin {
+    font: 700 11px/1 'Inter', sans-serif; color: #fff;
+    padding: 5px 8px; border-radius: 6px; border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  }
+  .pin-start, .tag-start { background: #1a1a2e; }
+  .pin-end, .tag-end { background: #2563eb; }
+
+  /* ── Phones: the panel becomes a bottom sheet ── */
+  @media (max-width: 640px) {
+    #ride-panel {
+      top: auto; left: 0; right: 0; bottom: 0; width: auto;
+      max-height: 52vh; border-radius: 14px 14px 0 0;
+      padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+    }
+    #ride-panel .lede { display: none; }
+    /* Keep the map's attribution above the sheet. */
+    .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: var(--sheet-h, 0px); }
+  }
+</style>
+</head>
+<body>
+
+<a id="logo-box" href="/" aria-label="DC Bike Safety map home">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg>
+  DC Bike Safety
+</a>
+
+<div id="map" aria-label="Map. Click to set the start, then the end."></div>
+
+<section id="ride-panel" aria-labelledby="ride-title">
+  <h1 id="ride-title">Ride it</h1>
+  <p class="lede">Pick a start and an end on the map. You get the shortest route and the lowest-stress route, colored by the RideScore stress level of each street.</p>
+
+  <div id="status" class="status" role="status" aria-live="polite">Loading DC streets...</div>
+
+  <ol class="points" aria-label="Route points">
+    <li id="row-start"><span class="tag tag-start">Start</span><span class="val empty" id="val-start">Click the map</span></li>
+    <li id="row-end"><span class="tag tag-end">End</span><span class="val empty" id="val-end">Then click again</span></li>
+  </ol>
+  <div class="row-actions">
+    <button type="button" class="ctrl-btn" id="reset-btn">Reset</button>
+  </div>
+
+  <div id="results" hidden>
+    <h2 id="route-heading">Route</h2>
+    <div class="mode-switcher" role="group" aria-labelledby="route-heading">
+      <button type="button" id="pick-fastest" aria-pressed="true">Shortest<span class="km" id="km-fastest"></span></button>
+      <button type="button" id="pick-calm" aria-pressed="false">Lowest stress<span class="km" id="km-calm"></span></button>
+    </div>
+    <p class="note" id="same-note" hidden>The shortest route is already the lowest-stress one.</p>
+
+    <h2>Stress along this route</h2>
+    <div class="bar" id="lts-bar" role="img"></div>
+    <ul class="legend" id="lts-legend"></ul>
+
+    <h2 id="hostile-heading">Hostile stretches (LTS 4)</h2>
+    <ul class="stretches" id="hostile-list" aria-labelledby="hostile-heading"></ul>
+    <p class="none" id="hostile-none" hidden>No hostile streets on this route.</p>
+
+    <a class="ride-link" id="ride-link" href="https://ridesimdc.com/" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg>
+      Ride it in Street View or 3D at RideSim DC
+    </a>
+  </div>
+
+  <a class="back" href="/">&larr; Back to the safety map</a>
+</section>
+
+<script>
+/* ── Settings ── */
+// Where the street network comes from. Swap for a vendored copy (for example
+// '/ride/network.json') to stop depending on RideSim DC.
+const NETWORK_URL = 'https://ridesimdc.com/data/network.json';
+const RIDESIM_URL = 'https://ridesimdc.com/';
+// A click further than this from any street is outside the network.
+const SNAP_MAX_M = 800;
+// LTS 1 to 4: calm, low stress, stressful, hostile.
+const LTS_COLOR = [null, '#1cae6d', '#8fd14f', '#f5a524', '#e5484d'];
+
+/* ── State ── */
+let net = null;
+let start = null;   // { node, lng, lat }
+let end = null;
+let routes = null;  // { fastest, calm }
+let choice = 'fastest';
+const markers = { start: null, end: null };
+
+const $ = (id) => document.getElementById(id);
+
+// Builds an element from plain text, so street names never reach innerHTML.
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+/* ── Formatting ── */
+function km(m) { return (m / 1000).toFixed(1) + ' km'; }
+function dist(m) { return m < 1000 ? Math.round(m) + ' m' : km(m); }
+function lngLatText(p) { return p.lat.toFixed(5) + ', ' + p.lng.toFixed(5); }
+
+function setStatus(text, isError, withRetry) {
+  const box = $('status');
+  box.classList.toggle('error', !!isError);
+  box.textContent = text;
+  if (withRetry) {
+    const b = el('button', 'ctrl-btn retry', 'Try again');
+    b.type = 'button';
+    b.addEventListener('click', loadNetwork);
+    box.appendChild(b);
+  }
+}
+
+/* ── Network ── */
+async function loadNetwork() {
+  setStatus('Loading DC streets...');
+  try {
+    net = await RideSim.loadNet(NETWORK_URL);
+    showStep();
+  } catch (err) {
+    console.warn(err);
+    net = null;
+    setStatus('Could not load the street network. Check your connection and try again.', true, true);
+  }
+}
+
+/* ── Steps ── */
+function showStep() {
+  $('row-start').classList.toggle('current', !start);
+  $('row-end').classList.toggle('current', !!start && !end);
+  if (!net) return;
+  if (!start) setStatus('Click the map to set your start.');
+  else if (!end) setStatus('Now click the map to set your end.');
+  else setStatus('Click the map again to start a new route.');
+}
+
+function placeMarker(which, p) {
+  if (markers[which]) markers[which].remove();
+  const pin = el('div', 'pin pin-' + which, which === 'start' ? 'Start' : 'End');
+  markers[which] = new maplibregl.Marker({ element: pin, anchor: 'bottom', offset: [0, -4] })
+    .setLngLat([p.lng, p.lat]).addTo(map);
+  const val = $('val-' + which);
+  val.textContent = lngLatText(p);
+  val.classList.remove('empty');
+}
+
+function reset() {
+  start = end = routes = null;
+  choice = 'fastest';
+  for (const k of ['start', 'end']) {
+    if (markers[k]) { markers[k].remove(); markers[k] = null; }
+  }
+  $('val-start').textContent = 'Click the map';
+  $('val-end').textContent = 'Then click again';
+  $('val-start').classList.add('empty');
+  $('val-end').classList.add('empty');
+  $('results').hidden = true;
+  drawRoutes();
+  showStep();
+}
+
+function onMapClick(lngLat) {
+  if (!net) {
+    if (!$('status').classList.contains('error')) setStatus('Still loading DC streets. One moment.');
+    return;
+  }
+  if (start && end) reset();
+  const node = RideSim.nearestNode(net, lngLat.lng, lngLat.lat, SNAP_MAX_M);
+  if (node < 0) {
+    setStatus('That spot is more than 800 m from any street we have. Pick a point in DC.', true);
+    return;
+  }
+  // Snap to the street, so the marker sits where the route starts.
+  const p = { node, lng: net.lon[node], lat: net.lat[node] };
+  if (!start) {
+    start = p;
+    placeMarker('start', p);
+    showStep();
+    return;
+  }
+  if (node === start.node) {
+    setStatus('That is the same spot as your start. Pick an end somewhere else.', true);
+    return;
+  }
+  const pair = RideSim.routePair(net, start.node, node, RideSim.COMMUTER_LTS);
+  if (!pair.fastest || !pair.calm) {
+    setStatus('No street connection between these two points. Try a spot on another street.', true);
+    return;
+  }
+  end = p;
+  placeMarker('end', p);
+  routes = pair;
+  choice = 'fastest';
+  showStep();
+  showResults();
+  fitTo(RideSim.routeLine(net, pair.fastest).coords.concat(RideSim.routeLine(net, pair.calm).coords));
+}
+
+/* ── Results ── */
+function sameRoute(a, b) {
+  return a.edges.length === b.edges.length && a.edges.every((e, i) => e === b.edges[i]);
+}
+
+function choose(which) {
+  choice = which;
+  showResults();
+}
+
+function showResults() {
+  if (!routes) return;
+  const r = routes[choice];
+  $('results').hidden = false;
+  $('km-fastest').textContent = km(routes.fastest.lengthM);
+  $('km-calm').textContent = km(routes.calm.lengthM);
+  $('pick-fastest').setAttribute('aria-pressed', String(choice === 'fastest'));
+  $('pick-calm').setAttribute('aria-pressed', String(choice === 'calm'));
+  $('same-note').hidden = !sameRoute(routes.fastest, routes.calm);
+
+  // Distance per stress level.
+  const bar = $('lts-bar'), legend = $('lts-legend');
+  bar.replaceChildren(); legend.replaceChildren();
+  const words = [];
+  for (let l = 1; l <= 4; l++) {
+    const m = r.byLts[l];
+    const pct = r.lengthM ? (100 * m) / r.lengthM : 0;
+    if (m > 0) {
+      const seg = el('span');
+      seg.style.width = pct + '%';
+      seg.style.background = LTS_COLOR[l];
+      bar.appendChild(seg);
+    }
+    const info = RideSim.LTS_INFO[l];
+    const li = el('li');
+    li.title = info.who;
+    const sw = el('span', 'sw');
+    sw.style.background = LTS_COLOR[l];
+    const val = el('span', 'm', dist(m) + ' ');
+    val.appendChild(el('span', 'pct', '(' + Math.round(pct) + '%)'));
+    li.append(sw, el('span', 'name', 'LTS ' + l + ' ' + info.name), val);
+    legend.appendChild(li);
+    words.push('LTS ' + l + ': ' + dist(m));
+  }
+  bar.setAttribute('aria-label', 'Stress breakdown. ' + words.join(', '));
+
+  // Hostile stretches, grouped by street, in travel order.
+  const list = $('hostile-list');
+  list.replaceChildren();
+  const hostile = RideSim.stretches(net, r, (e) => RideSim.edgeName(net, e)).filter((s) => s.lts === 4);
+  $('hostile-none').hidden = hostile.length > 0;
+  for (const s of hostile) {
+    const b = el('button');
+    b.type = 'button';
+    const dot = el('span', 'dot');
+    dot.setAttribute('aria-hidden', 'true');
+    b.append(dot, el('span', 'name', s.name), el('span', 'm', dist(s.lengthM)), el('span', 'go', 'at ' + km(s.startM)));
+    b.setAttribute('aria-label', s.name + ', ' + dist(s.lengthM) + ' of hostile street, ' + km(s.startM) + ' into the ride. Show on map.');
+    b.addEventListener('click', () => focusStretch(s));
+    const li = el('li');
+    li.appendChild(b);
+    list.appendChild(li);
+  }
+
+  // Hand the same trip to RideSim DC.
+  const fmt = (p, label) => p.lng.toFixed(5) + ',' + p.lat.toFixed(5) + ',' + encodeURIComponent(label);
+  $('ride-link').href = RIDESIM_URL + '?from=' + fmt(start, 'Start') + '&to=' + fmt(end, 'End') +
+    (choice === 'calm' ? '&route=calm' : '');
+
+  drawRoutes();
+}
+
+/* ── Drawing ── */
+const EMPTY = { type: 'FeatureCollection', features: [] };
+
+function lineFeature(coords, props) {
+  return { type: 'Feature', properties: props || {}, geometry: { type: 'LineString', coordinates: coords } };
+}
+
+function drawRoutes() {
+  if (!map.getSource('route')) return;
+  if (!routes) {
+    map.getSource('route').setData(EMPTY);
+    map.getSource('route-alt').setData(EMPTY);
+    map.getSource('route-focus').setData(EMPTY);
+    return;
+  }
+  const r = routes[choice];
+  const other = routes[choice === 'fastest' ? 'calm' : 'fastest'];
+  // One feature per run of equal stress, so each can carry its own color.
+  const runs = RideSim.stretches(net, r, () => '');
+  map.getSource('route').setData({
+    type: 'FeatureCollection',
+    features: runs.map((s) => lineFeature(s.coords, { lts: s.lts })),
+  });
+  map.getSource('route-alt').setData(sameRoute(r, other)
+    ? EMPTY
+    : { type: 'FeatureCollection', features: [lineFeature(RideSim.routeLine(net, other).coords)] });
+  map.getSource('route-focus').setData(EMPTY);
+}
+
+function focusStretch(s) {
+  map.getSource('route-focus').setData({ type: 'FeatureCollection', features: [lineFeature(s.coords)] });
+  fitTo(s.coords, 17);
+}
+
+// Room for the panel, so the route is never hidden behind it.
+function mapPadding() {
+  const panel = $('ride-panel').getBoundingClientRect();
+  if (window.matchMedia('(max-width: 640px)').matches) {
+    return { top: 56, right: 30, left: 30, bottom: panel.height + 30 };
+  }
+  return { top: 60, right: 40, bottom: 40, left: panel.right + 40 };
+}
+
+function fitTo(coords, maxZoom) {
+  if (!coords.length) return;
+  const b = new maplibregl.LngLatBounds(coords[0], coords[0]);
+  for (const c of coords) b.extend(c);
+  map.fitBounds(b, { padding: mapPadding(), maxZoom: maxZoom || 16, duration: 800 });
+}
+
+/* ── Map ── */
+const map = RideScore.createMap('map');
+
+map.on('style.load', () => {
+  map.addSource('route-alt', { type: 'geojson', data: EMPTY });
+  map.addSource('route', { type: 'geojson', data: EMPTY });
+  map.addSource('route-focus', { type: 'geojson', data: EMPTY });
+
+  // The route not chosen, dotted.
+  map.addLayer({
+    id: 'route-alt', type: 'line', source: 'route-alt',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#475569', 'line-width': 4, 'line-dasharray': [0.1, 2], 'line-opacity': 0.85 },
+  });
+  // A hostile stretch picked from the list, as a soft halo.
+  map.addLayer({
+    id: 'route-focus', type: 'line', source: 'route-focus',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#1a1a2e', 'line-width': 16, 'line-opacity': 0.3 },
+  });
+  // The chosen route: a white casing, then each stretch in its stress color.
+  map.addLayer({
+    id: 'route-casing', type: 'line', source: 'route',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#fff', 'line-width': 9 },
+  });
+  map.addLayer({
+    id: 'route', type: 'line', source: 'route',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['match', ['get', 'lts'], 1, LTS_COLOR[1], 2, LTS_COLOR[2], 3, LTS_COLOR[3], 4, LTS_COLOR[4], '#94a3b8'],
+      'line-width': 5,
+    },
+  });
+
+  drawRoutes();
+});
+
+map.on('click', (e) => onMapClick(e.lngLat));
+
+/* ── Wiring ── */
+$('reset-btn').addEventListener('click', reset);
+$('pick-fastest').addEventListener('click', () => choose('fastest'));
+$('pick-calm').addEventListener('click', () => choose('calm'));
+
+// On phones, keep the map attribution clear of the bottom sheet.
+new ResizeObserver(() => {
+  const mobile = window.matchMedia('(max-width: 640px)').matches;
+  document.documentElement.style.setProperty('--sheet-h', mobile ? $('ride-panel').offsetHeight + 'px' : '0px');
+}).observe($('ride-panel'));
+
+showStep();
+loadNetwork();
+</script>
+</body>
+</html>
