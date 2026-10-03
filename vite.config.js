@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 
 import { reportEnv } from './scripts/check-env.mjs';
+import { folderIndex } from './scripts/folder-index.mjs';
 
 // Vite is a development tool here and is never deployed. It serves the pages
 // from frontend/, the same files nginx and FastAPI serve in production, and
@@ -27,6 +28,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     root: 'frontend',
+
+    // Two pages, no client-side router. Without this, every address that
+    // matches no file is answered with the root page rather than a 404, which
+    // hides a typo in a link or a filename behind a page that loads fine.
+    appType: 'mpa',
+
+    plugins: [folderIndex()],
+
     server: {
       proxy: {
         '/tiles': forward,

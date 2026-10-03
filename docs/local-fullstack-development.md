@@ -222,7 +222,7 @@ says a migration ran; it cannot know the file changed afterwards.
 
 Open **<http://localhost:8000>** — the map, with streets colored by score.
 
-Open **<http://localhost:8000/survey/>** — plain map for user feedback.
+Open **<http://localhost:8000/survey>** — plain map for user feedback.
 
 
 Test from the command line:
@@ -299,7 +299,7 @@ Everything arrives at nginx on port 8000, and nginx decides what happens next:
 
 | you ask for | answered by | reading |
 |---|---|---|
-| `/`, `/survey/` | nginx, straight from disk | `frontend/` |
+| `/`, `/survey` | nginx, straight from disk | `frontend/` |
 | `/tiles/...` | Martin | the `serving` area of the database |
 | `/api/...` | the API | the `app` area of the database |
 | anything else | nginx | a 404, which never reaches the API |

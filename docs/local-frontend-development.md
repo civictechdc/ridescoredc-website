@@ -137,7 +137,7 @@ Open **<http://localhost:5173>**. You should see:
 - **Imagery** and **Accidents** toggling on and off
 - a popup when you click a street
 
-Then open **<http://localhost:5173/survey/>**, which is the survey.
+Then open **<http://localhost:5173/survey>**, which is the survey.
 
 If the map page looks right, your setup is correct: the pages come from your folder and
 everything else from the shared server.
@@ -164,7 +164,7 @@ text or the element ID you want rather than reading top to bottom.
 **A change in `src/shared/` affects both pages.** Check both pages after an edit.
 
 **Adding a page** means adding a directory with an `index.html`. A folder named
-`about` containing `index.html` is served at `/about/`.
+`about` containing `index.html` is served at `/about/`, and `/about` is sent there.
 
 ## Step 8 — Check and test your changes before opening a Pull Request
 
@@ -200,6 +200,15 @@ the terminal running `npm run dev` has not stopped.
 
 **A change to `.env` has no effect.** `npm run dev` reads that file once, when it starts.
 Stop it with `Ctrl-C` and start it again.
+
+**A page address 404s.** A page is a folder under `frontend/` holding an `index.html`: `/`
+is `frontend/index.html`, `/survey/` is `frontend/survey/index.html`. An address matching
+no such folder is a 404 rather than the map, which is what nginx answers too, so a mistyped
+link fails where you typed it instead of loading a page that looks fine.
+
+**The address gained a trailing slash.** `/survey` is sent to `/survey/`, which is the
+address nginx serves the same page at. Both work; the slash is the one the browser keeps,
+because that is the form Vite reloads on save.
 
 **Port 5173 is in use.** `npm run dev -- --port 5174`.
 
