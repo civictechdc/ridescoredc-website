@@ -69,6 +69,90 @@
   }
   .ctrl-btn:hover { background: #f8fafc; border-color: #94a3b8; }
   .ctrl-btn svg { width: 14px; height: 14px; }
+  #route-drawing-panel {
+    display: none; position: fixed; top: 96px; left: 12px; z-index: 900;
+    width: min(360px, calc(100vw - 24px)); max-height: min(58vh, 460px);
+    overflow: auto; padding: 12px; border-radius: 10px; background: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,.16); font-size: 12px; color: #334155;
+  }
+  #route-drawing-panel.open { display: block; }
+  #route-drawing-panel.minimized { width: min(220px, calc(100vw - 24px)); }
+  #route-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin: -4px -4px 8px; padding: 4px;
+    border-radius: 6px; background: #f1f5f9; cursor: move;
+    touch-action: none; user-select: none;
+  }
+  #route-panel-heading { display: flex; flex-direction: column; gap: 2px; }
+  #route-panel-heading span { font-size: 10px; font-weight: 400; color: #64748b; }
+  #route-panel-header button {
+    flex: 0 0 34px; width: 34px; height: 34px; border: 1px solid #cbd5e1;
+    border-radius: 8px; padding: 0; background: #fff; color: #334155;
+    font: 600 20px/1 'Inter', sans-serif; cursor: pointer;
+  }
+  #route-drawing-panel.minimized #route-drawing-status,
+  #route-drawing-panel.minimized #route-drawing-help,
+  #route-drawing-panel.minimized #route-drawing-controls,
+  #route-drawing-panel.minimized #route-drawing-review-title,
+  #route-drawing-panel.minimized #route-drawing-review,
+  #route-drawing-panel.minimized #route-drawing-actions { display: none; }
+  #route-drawing-panel.route-complete #route-drawing-help { display: none; }
+  #route-drawing-status { margin: 0 0 8px; line-height: 1.4; }
+  #route-drawing-help { margin: 0 0 8px; line-height: 1.45; color: #475569; }
+  #route-drawing-controls button { min-height: 44px; cursor: pointer; }
+  #route-drawing-controls > div:first-child { gap: 8px; }
+  #route-drawing-controls #finish-route-button,
+  #route-drawing-controls #undo-button,
+  #route-drawing-controls #cancel-button {
+    min-height: 44px; flex: 1; margin: 0; border: 1px solid #cbd5e1;
+    border-radius: 8px; padding: 8px 10px; background: #fff; color: #334155;
+    font: 600 12px/1.25 'Inter', sans-serif; box-shadow: 0 1px 2px rgba(15,23,42,.08);
+  }
+  #route-drawing-controls #finish-route-button {
+    border-color: #1d4ed8; background: #1d4ed8; color: #fff;
+  }
+  #route-drawing-controls #finish-route-button:hover { background: #1e40af; }
+  #route-drawing-controls #undo-button:hover,
+  #route-drawing-controls #cancel-button:hover { background: #f8fafc; }
+  #route-drawing-controls button:disabled { opacity: .45; cursor: default; }
+  #route-drawing-controls p, #route-drawing-controls ul { margin: 8px 0; }
+  #route-drawing-review { margin: 8px 0 0; padding-left: 18px; max-height: 190px; overflow: auto; }
+  #route-drawing-review-title { margin: 10px 0 0; font-size: 12px; }
+  #route-drawing-review-title[hidden] { display: none; }
+  #route-drawing-review li { margin: 3px 0; overflow-wrap: anywhere; }
+  #route-drawing-review[hidden] { display: none; }
+  #route-drawing-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  #route-drawing-actions[hidden] { display: none; }
+  #route-drawing-actions button {
+    min-height: 42px; flex: 1 1 auto; border: 1px solid #cbd5e1;
+    border-radius: 8px; padding: 8px 12px; background: #fff;
+    color: #334155; font: 600 12px/1.25 'Inter', sans-serif; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15,23,42,.08);
+  }
+  #route-drawing-actions button:hover { background: #f8fafc; }
+  #route-drawing-actions #route-rate-button {
+    flex-basis: 100%; border-color: #1d4ed8; background: #1d4ed8; color: #fff;
+  }
+  #route-drawing-actions #route-rate-button:hover { background: #1e40af; }
+  #route-drawing-controls #snap_mode { display: none !important; }
+  #route-drawing-controls #route-snapper-instructions,
+  #route-drawing-controls #waypoint_list,
+  #route-drawing-controls input#add-waypoint-value,
+  #route-drawing-controls #add-waypoint-button,
+  #route-drawing-controls input#avoidDoublingBack,
+  #route-drawing-controls input#extendRoute,
+  #route-drawing-controls input#areaMode { display: none; }
+  #route-drawing-controls label:has(#avoidDoublingBack),
+  #route-drawing-controls label:has(#extendRoute),
+  #route-drawing-controls label:has(#areaMode),
+  #route-drawing-controls p:has(+ #waypoint_list),
+  #route-drawing-controls ul { display: none; }
+  #route-drawing-controls #waypoint_list + ul { display: none; }
+  #route-drawing-controls #undo-button { white-space: normal; }
+  #route-drawing-controls #start-button { display: none; }
+  @media (max-width: 768px) {
+    #route-drawing-panel { top: 140px; }
+  }
 
   /* ── Toggle dot buttons ── */
   .toggle-btn { position: relative; padding-left: 26px; }
@@ -79,100 +163,17 @@
   .toggle-btn.active { background: #f0fdf4; border-color: #86efac; color: #166534; }
   .toggle-btn.active::before { background: #22c55e; }
 
-  /* ── Paint button active state ── */
-  #paintBtn.active { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
-  #paintBtn.active::before { background: #3b82f6; }
+  #routeDrawingBtn.active { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+  #routeDrawingBtn.active::before { background: #3b82f6; }
 
 
   /* ── Map ── */
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
 
   /* ── Popup ── */
-  .maplibregl-popup { max-width: 320px; font: 12px/18px 'Inter', sans-serif; }
+  .maplibregl-popup { max-width: min(320px, calc(100vw - 24px)); font: 12px/18px 'Inter', sans-serif; }
   .maplibregl-popup-content { padding: 12px 14px; border-radius: 8px; }
-
-  /* ────────────────────────────────────────────
-     FEEDBACK / PAINT MODE
-  ──────────────────────────────────────────── */
-
-  /* Paint canvas — sits above map, captures events only when paint mode is on */
-  #paint-canvas {
-    position: fixed; top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 500;
-    touch-action: none;
-    cursor: crosshair;
-  }
-
-  /* Hint strip shown while paint mode is active */
-  #paint-hint {
-    position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%);
-    background: rgba(29, 78, 216, 0.88); color: #fff;
-    border-radius: 8px; padding: 9px 16px;
-    font: 500 12px/1.4 'Inter', sans-serif;
-    pointer-events: none; z-index: 600;
-    opacity: 0; transition: opacity .2s ease;
-    max-width: min(420px, 92vw); text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,.2);
-  }
-  #paint-hint.visible { opacity: 1; }
-
-  /* Unpaint canvas — above map when Unpaint mode is on */
-  #unpaint-canvas {
-    position: fixed; top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 501;
-    touch-action: none;
-    cursor: crosshair;
-  }
-
-  #unpaint-hint {
-    position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%);
-    background: rgba(185, 28, 28, 0.92); color: #fff;
-    border-radius: 8px; padding: 9px 16px;
-    font: 500 12px/1.35 'Inter', sans-serif;
-    pointer-events: none; z-index: 600;
-    opacity: 0; transition: opacity .2s ease;
-    max-width: min(420px, 92vw); text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,.2);
-  }
-  #unpaint-hint.visible { opacity: 1; }
-
-  #unpaintBtn.active { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
-  #unpaintBtn.active::before { background: #dc2626; }
-
-  /* Selection badge — bottom-centre, appears when ≥1 segment selected */
-  #selection-badge {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: #1d4ed8; color: #fff;
-    border-radius: 16px; padding: 9px 10px 9px 16px;
-    font: 600 13px/1 'Inter', sans-serif;
-    z-index: 900; display: none; align-items: center; gap: 8px;
-    box-shadow: 0 4px 16px rgba(29,78,216,.4);
-    white-space: nowrap; flex-wrap: wrap; max-width: min(340px, calc(100vw - 32px));
-  }
-  #badge-rate-break { flex-basis: 100%; height: 0; }
-  #badge-count { opacity: .9; }
-  .badge-btn {
-    border: none; border-radius: 999px; padding: 5px 13px;
-    font: 600 12px/1 'Inter', sans-serif; cursor: pointer; transition: all .15s;
-  }
-  #badge-clear { background: rgba(255,255,255,.2); color: #fff; }
-  #badge-clear:hover { background: rgba(255,255,255,.3); }
-  #badge-undo { background: rgba(255,255,255,.15); color: #fff; }
-  #badge-undo:hover { background: rgba(255,255,255,.28); }
-  #badge-undo:disabled { opacity: .35; cursor: default; }
-  #badge-undo-stroke { background: rgba(255,255,255,.12); color: #fff; }
-  #badge-undo-stroke:hover { background: rgba(255,255,255,.22); }
-  #badge-undo-stroke:disabled { opacity: .35; cursor: default; }
-  #badge-rate { background: #fff; color: #1d4ed8; width: 100%; text-align: center; border-radius: 8px; padding: 7px 13px; }
-  #badge-rate:hover { background: #eff6ff; }
-  @media (max-width: 768px) {
-    #badge-undo-stroke { display: none; }
-    #selection-badge { padding: 8px 8px 8px 14px; gap: 6px; max-width: calc(100vw - 32px); }
-  }
+  .maplibregl-popup-content td { overflow-wrap: anywhere; word-break: break-word; }
 
   /* Survey panel — slides in from right */
   #survey-panel {
@@ -556,35 +557,27 @@
 <div class="controls">
   <button class="ctrl-btn toggle-btn" id="imageryBtn" onclick="toggleImagery()">Imagery</button>
   <button class="ctrl-btn toggle-btn" id="accidentsBtn" onclick="toggleAccidents()">Accidents</button>
-  <button class="ctrl-btn toggle-btn" id="paintBtn" onclick="togglePaintMode()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-    Paint Route
-  </button>
-  <button class="ctrl-btn toggle-btn" id="unpaintBtn" type="button" onclick="toggleUnpaintMode()" title="Remove segments from your painted route: tap or draw along blue segments. Click again to exit.">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-    Unpaint
+  <button class="ctrl-btn toggle-btn" id="routeDrawingBtn" type="button" onclick="toggleRouteDrawing()" title="Draw a route along the visible roads.">
+    Draw route
   </button>
 </div>
 
-
-<!-- ── Paint canvas (sits above map, pointer-events toggled by paint mode) ── -->
-<canvas id="paint-canvas"></canvas>
-<canvas id="unpaint-canvas"></canvas>
-
-<!-- ── Paint hint strip ── -->
-<div id="paint-hint"><strong>Swipe</strong> along roads to add segments (lookahead confirm), or <strong>tap</strong> a road to add one. Undo or tap a blue segment to remove one segment.</div>
-
-<div id="unpaint-hint"><strong>Swipe</strong> across your blue route to strip segments, or <strong>tap</strong> a selected segment to remove it. Use <strong>Paint Route</strong> to add again.</div>
-
-<!-- ── Selection badge ── -->
-<div id="selection-badge">
-  <span id="badge-count">0 segments</span>
-  <button class="badge-btn" id="badge-undo" type="button" disabled onclick="undoLastSegment()" title="Undo last segment (Ctrl+Z)">Undo</button>
-  <button class="badge-btn" id="badge-undo-stroke" type="button" disabled onclick="undoLastPaintStroke()" title="Undo the last completed paint stroke (batch)">Undo stroke</button>
-  <button class="badge-btn" id="badge-clear" onclick="clearSelection()">Clear</button>
-  <div id="badge-rate-break"></div>
-  <button class="badge-btn" id="badge-rate" onclick="openSurveyPanel()">Rate route →</button>
-</div>
+<section id="route-drawing-panel" aria-label="Route drawing controls">
+  <div id="route-panel-header">
+    <strong id="route-panel-heading">Draw route <span>Drag to move</span></strong>
+    <button id="route-panel-minimize" type="button" aria-label="Minimize route panel" title="Minimize route panel" aria-expanded="true">−</button>
+  </div>
+  <p id="route-drawing-status" role="status" aria-live="polite">Tap Draw route to start.</p>
+  <p id="route-drawing-help">Then tap additional green dots to add segments on your route until you reach your destination. You can drag dots on the route to adjust the path; moving the last stop extends the route.</p>
+  <div id="route-drawing-controls"></div>
+  <h3 id="route-drawing-review-title" hidden>Streets in your route</h3>
+  <ul id="route-drawing-review" aria-label="Streets in route order" hidden></ul>
+  <div id="route-drawing-actions" hidden>
+    <button id="route-rate-button" type="button" onclick="rateSelectedRoute()">Rate route</button>
+    <button id="route-redraw-button" type="button" onclick="redrawSelectedRoute()">Redraw</button>
+    <button id="route-clear-button" type="button" onclick="clearSelectedRoute()">Clear route</button>
+  </div>
+</section>
 
 <!-- ── Survey sheet ── -->
 <div id="survey-sheet">
@@ -735,23 +728,11 @@
 
 <script>
 /* ════════════════════════════════════════════════════════
-   EXISTING MAP CONTROLS
-════════════════════════════════════════════════════════ */
-
-
-
-/* ════════════════════════════════════════════════════════
-   STROKE / SELECTION ORDER (builds route path for paint)
-════════════════════════════════════════════════════════ */
-let unpaintMode = false;
-/** Commit order along route (deduped adjacent). */
-let strokeOrderedSegmentIds = [];
-const strokeBatchesHistory = [];
-const AVOID_REVISIT_MULT = 1.14;
-
-/* ════════════════════════════════════════════════════════
    MAP INIT
 ════════════════════════════════════════════════════════ */
+let routeDrawingTool = null;
+let routeDrawingLoading = false;
+
 const map = RideScore.createMap('map');
 
 map.on('style.load', () => {
@@ -833,7 +814,7 @@ map.on('style.load', () => {
   });
 
   map.on('click', 'road-selected', (e) => {
-    if (paintMode || unpaintMode) return;
+    if (routeDrawingActive()) return;
     const f = e.features[0];
     const featureId = f.id !== undefined ? f.id : f.properties.tile_id;
     if (featureId === undefined || featureId === null) return;
@@ -846,7 +827,7 @@ map.on('style.load', () => {
 
   /* ── Popup: road segment ── */
   map.on('click', 'road-score', (e) => {
-    if (paintMode || unpaintMode) return;
+    if (routeDrawingActive()) return;
     const p = e.features[0].properties;
     new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`
       <div style="font-family:'Inter',sans-serif">
@@ -859,819 +840,920 @@ map.on('style.load', () => {
 
 
   map.on('mouseenter', 'road-score', () => {
-    if (paintMode || unpaintMode) return;
+    if (routeDrawingActive()) return;
     map.getCanvas().style.cursor = 'pointer';
   });
   map.on('mouseleave', 'road-score', () => {
-    if (paintMode || unpaintMode) return;
+    if (routeDrawingActive()) return;
     map.getCanvas().style.cursor = '';
   });
   map.on('mouseenter', 'road-selected', () => {
-    if (paintMode || unpaintMode) return;
+    if (routeDrawingActive()) return;
     map.getCanvas().style.cursor = 'pointer';
   });
   map.on('mouseleave', 'road-selected', () => {
-    if (paintMode || unpaintMode) return;
+    if (routeDrawingActive()) return;
     map.getCanvas().style.cursor = '';
   });
 
 });
 
 /* ════════════════════════════════════════════════════════
-   PAINT MODE — lookahead snap queue, continuity prior, scoped
-   post-stroke prune, undo / click-off
+   ROUTE DRAWING
 ════════════════════════════════════════════════════════ */
-let paintMode   = false;
-let painting    = false;
-let paintPoints = [];           // { x, y } screen coords of current stroke
-let snapThrottle = null;
-let fadeAnim    = null;
+const routeDrawingPanel = document.getElementById('route-drawing-panel');
+const routeDrawingControls = document.getElementById('route-drawing-controls');
+const routeDrawingStatus = document.getElementById('route-drawing-status');
+const routeDrawingActions = document.getElementById('route-drawing-actions');
+let routeDrawingPreviewSignature = '';
+let routeDrawingEndpointDragBefore = null;
+let routeDrawingDragBefore = null;
+let routeDrawingUndoStack = [];
+let routeDrawingLastWaypoints = [];
+let routeDrawingTouchDragging = false;
+let routeDrawingSuppressTouchClick = false;
+let routeDrawingPreviewScheduled = false;
+let routeDrawingControlObserver = null;
+let routeDrawingMousePointerId = null;
+let routeDrawingMousePointerCandidate = null;
+let routeDrawingWaypointClickHandled = false;
 
-let momX = 0, momY = 0;
-let momReady = false;
-
-const COMMIT_LAG = 8;
-const COMMIT_ALIGN_THRESHOLD = 0.38;
-const COMMIT_ALIGN_RELAXED = 0.22;
-const CONTINUITY_PX = 16;
-const CONTINUITY_SCORE_MULT = 0.58;
-/** Post–pointer-up: only drop segments clearly off the raw stroke (no Chaikin / re-snap). */
-const RAW_PRUNE_SAMPLE_PX = 10;
-const OUTLIER_PRUNE_PX = 62;
-
-const paintCanvas = document.getElementById('paint-canvas');
-const paintCtx    = paintCanvas.getContext('2d');
-const paintHint   = document.getElementById('paint-hint');
-
-const unpaintCanvas = document.getElementById('unpaint-canvas');
-const unpaintCtx    = unpaintCanvas.getContext('2d');
-const unpaintHint   = document.getElementById('unpaint-hint');
-let unpainting = false;
-let unpaintPoints = [];
-let unpaintSnapThrottle = null;
-let unpaintFadeAnim = null;
-
-let snapQueue = [];
-let selectionHistory = [];
-let lastCommittedEdge = null;
-/** Segment IDs newly committed during the current pointer gesture (for stroke-local prune only). */
-let idsTouchedThisStroke = new Set();
-
-function resizeCanvas() {
-  paintCanvas.width  = window.innerWidth;
-  paintCanvas.height = window.innerHeight;
-  unpaintCanvas.width  = window.innerWidth;
-  unpaintCanvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-function resetSnapQueueForNewStroke() {
-  while (snapQueue.length) {
-    const item = snapQueue.pop();
-    clearPendingIfUnreferenced(item.featureId);
-  }
-}
-
-function togglePaintMode() {
-  if (unpaintMode) toggleUnpaintMode();
-  if (paintMode && painting) {
-    painting = false;
-    if (snapThrottle) { clearTimeout(snapThrottle); snapThrottle = null; }
-    finishStrokePipeline();
-  }
-  paintMode = !paintMode;
-  document.getElementById('paintBtn').classList.toggle('active', paintMode);
-  paintCanvas.style.pointerEvents = paintMode ? 'all' : 'none';
-  paintHint.classList.toggle('visible', paintMode);
-
-  if (paintMode) {
-    map.dragPan.disable();
-    map.scrollZoom.disable();
-    map.doubleClickZoom.disable();
-    map.touchZoomRotate.disable();
-    map.getCanvas().style.cursor = '';
-  } else if (!unpaintMode) {
-    map.dragPan.enable();
-    map.scrollZoom.enable();
-    map.doubleClickZoom.enable();
-    map.touchZoomRotate.enable();
-  }
-}
-
-function isStrokeTapGesture(pts, maxDistPx) {
-  maxDistPx = maxDistPx || 14;
-  if (!pts || pts.length < 1) return false;
-  const p0 = pts[0], p1 = pts[pts.length - 1];
-  return Math.hypot(p1.x - p0.x, p1.y - p0.y) < maxDistPx && pts.length <= 10;
-}
-
-paintCanvas.addEventListener('pointerdown', (e) => {
-  painting = true;
-  paintPoints = [{ x: e.clientX, y: e.clientY }];
-  paintCanvas.setPointerCapture(e.pointerId);
-  cancelFade();
-  resetMomentum();
-  resetSnapQueueForNewStroke();
-  idsTouchedThisStroke.clear();
+const routeDrawingPanelHeader = document.getElementById('route-panel-header');
+const routeDrawingPanelMinimizeButton = document.getElementById('route-panel-minimize');
+routeDrawingPanelMinimizeButton.addEventListener('click', () => {
+  const minimized = routeDrawingPanel.classList.toggle('minimized');
+  routeDrawingPanelMinimizeButton.textContent = minimized ? '+' : '−';
+  routeDrawingPanelMinimizeButton.setAttribute('aria-label', minimized ? 'Expand route panel' : 'Minimize route panel');
+  routeDrawingPanelMinimizeButton.title = minimized ? 'Expand route panel' : 'Minimize route panel';
+  routeDrawingPanelMinimizeButton.setAttribute('aria-expanded', String(!minimized));
+});
+let routeDrawingPanelDrag = null;
+routeDrawingPanelHeader.addEventListener('pointerdown', event => {
+  if (event.target.closest('button')) return;
+  const rect = routeDrawingPanel.getBoundingClientRect();
+  routeDrawingPanelDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top };
+  routeDrawingPanel.style.left = `${rect.left}px`;
+  routeDrawingPanel.style.top = `${rect.top}px`;
+  routeDrawingPanel.style.right = 'auto';
+  routeDrawingPanel.style.bottom = 'auto';
+  routeDrawingPanelHeader.setPointerCapture(event.pointerId);
+});
+routeDrawingPanelHeader.addEventListener('pointermove', event => {
+  if (!routeDrawingPanelDrag || routeDrawingPanelDrag.pointerId !== event.pointerId) return;
+  const rect = routeDrawingPanel.getBoundingClientRect();
+  const left = Math.max(0, Math.min(window.innerWidth - rect.width, routeDrawingPanelDrag.left + event.clientX - routeDrawingPanelDrag.x));
+  const top = Math.max(0, Math.min(window.innerHeight - 48, routeDrawingPanelDrag.top + event.clientY - routeDrawingPanelDrag.y));
+  routeDrawingPanel.style.left = `${left}px`;
+  routeDrawingPanel.style.top = `${top}px`;
+});
+routeDrawingPanelHeader.addEventListener('pointerup', event => {
+  if (!routeDrawingPanelDrag || routeDrawingPanelDrag.pointerId !== event.pointerId) return;
+  routeDrawingPanelDrag = null;
+  routeDrawingPanelHeader.releasePointerCapture(event.pointerId);
+});
+routeDrawingPanelHeader.addEventListener('pointercancel', () => { routeDrawingPanelDrag = null; });
+window.addEventListener('resize', () => {
+  if (!routeDrawingPanel.style.left || !routeDrawingPanel.classList.contains('open')) return;
+  const rect = routeDrawingPanel.getBoundingClientRect();
+  routeDrawingPanel.style.left = `${Math.max(0, Math.min(window.innerWidth - rect.width, rect.left))}px`;
+  routeDrawingPanel.style.top = `${Math.max(0, Math.min(window.innerHeight - 48, rect.top))}px`;
 });
 
-paintCanvas.addEventListener('pointermove', (e) => {
-  if (!painting) return;
-  paintPoints.push({ x: e.clientX, y: e.clientY });
-  updateMomentum(paintPoints);
-  drawSpline(paintPoints, 0.7);
-
-  if (!snapThrottle) {
-    const pt = { x: e.clientX, y: e.clientY };
-    snapThrottle = setTimeout(() => {
-      enqueuePaintSnap(pt);
-      snapThrottle = null;
-    }, 50);
+document.addEventListener('keydown', event => {
+  if (!routeDrawingActive()) return;
+  if (event.key.toLowerCase() === 's' && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return;
   }
-});
-
-paintCanvas.addEventListener('pointerup', (e) => {
-  painting = false;
-  paintPoints.push({ x: e.clientX, y: e.clientY });
-  if (snapThrottle) { clearTimeout(snapThrottle); snapThrottle = null; }
-
-  if (isStrokeTapGesture(paintPoints)) {
-    resetSnapQueueForNewStroke();
-    const pt = { x: e.clientX, y: e.clientY };
-    const cand = findBestCandidate(pt, {});
-    if (cand && !selectedSegments.has(cand.featureId)) {
-      const gc = (cand.vertexLLA && cand.vertexLLB)
-        ? [(cand.vertexLLA[0] + cand.vertexLLB[0]) / 2, (cand.vertexLLA[1] + cand.vertexLLB[1]) / 2]
-        : null;
-      const ep = (cand.lineEndpointA && cand.lineEndpointB)
-        ? [cand.lineEndpointA, cand.lineEndpointB]
-        : null;
-      commitSegment(cand.featureId, cand.props, cand.edge, gc, ep);
-      idsTouchedThisStroke.add(cand.featureId);
-      strokeBatchesHistory.push([cand.featureId]);
-    }
-  } else {
-    enqueuePaintSnap({ x: e.clientX, y: e.clientY });
-    finishStrokePipeline();
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    undoRouteDrawingAction();
+    return;
   }
-  fadeStroke();
-});
-
-paintCanvas.addEventListener('pointercancel', () => {
-  painting = false;
-  if (snapThrottle) { clearTimeout(snapThrottle); snapThrottle = null; }
-  finishStrokePipeline();
-  fadeStroke();
-});
-
-/* ── Catmull-Rom spline renderer ── */
-function drawSpline(pts, alpha) {
-  if (pts.length < 2) return;
-  paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
-  paintCtx.globalAlpha = alpha;
-  paintCtx.strokeStyle = '#2563eb';
-  paintCtx.lineWidth   = 4;
-  paintCtx.lineJoin    = 'round';
-  paintCtx.lineCap     = 'round';
-  paintCtx.beginPath();
-  paintCtx.moveTo(pts[0].x, pts[0].y);
-
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[Math.max(0, i - 1)];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[Math.min(pts.length - 1, i + 2)];
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    paintCtx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    routeDrawingControls.querySelector('#cancel-button')?.click();
   }
-  paintCtx.stroke();
-  paintCtx.globalAlpha = 1;
-}
-
-/* ── Fade stroke out over ~400ms after pointer lift ── */
-function cancelFade() {
-  if (fadeAnim) { clearInterval(fadeAnim); fadeAnim = null; }
-  paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
-}
-
-function fadeStroke() {
-  if (paintPoints.length < 2) return;
-  let alpha = 0.7;
-  fadeAnim = setInterval(() => {
-    alpha -= 0.07;
-    if (alpha <= 0) {
-      clearInterval(fadeAnim);
-      fadeAnim = null;
-      paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
-      return;
-    }
-    drawSpline(paintPoints, alpha);
-  }, 30);
-}
-
-function drawSplineUnpaint(pts, alpha) {
-  if (pts.length < 2) return;
-  unpaintCtx.clearRect(0, 0, unpaintCanvas.width, unpaintCanvas.height);
-  unpaintCtx.globalAlpha = alpha;
-  unpaintCtx.strokeStyle = '#dc2626';
-  unpaintCtx.lineWidth   = 4;
-  unpaintCtx.lineJoin    = 'round';
-  unpaintCtx.lineCap     = 'round';
-  unpaintCtx.beginPath();
-  unpaintCtx.moveTo(pts[0].x, pts[0].y);
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[Math.max(0, i - 1)];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[Math.min(pts.length - 1, i + 2)];
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    unpaintCtx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+}, true);
+document.addEventListener('keypress', event => {
+  if (routeDrawingActive() && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    event.stopImmediatePropagation();
   }
-  unpaintCtx.stroke();
-  unpaintCtx.globalAlpha = 1;
+}, true);
+
+function routeDrawingActive() {
+  return Boolean(routeDrawingTool && routeDrawingTool.isActive());
 }
 
-function cancelUnpaintFade() {
-  if (unpaintFadeAnim) { clearInterval(unpaintFadeAnim); unpaintFadeAnim = null; }
-  unpaintCtx.clearRect(0, 0, unpaintCanvas.width, unpaintCanvas.height);
+function setRouteDrawingStatus(message) {
+  routeDrawingStatus.textContent = message;
 }
 
-function fadeUnpaintStroke() {
-  if (unpaintPoints.length < 2) return;
-  let alpha = 0.7;
-  unpaintFadeAnim = setInterval(() => {
-    alpha -= 0.07;
-    if (alpha <= 0) {
-      clearInterval(unpaintFadeAnim);
-      unpaintFadeAnim = null;
-      unpaintCtx.clearRect(0, 0, unpaintCanvas.width, unpaintCanvas.height);
-      return;
-    }
-    drawSplineUnpaint(unpaintPoints, alpha);
-  }, 30);
+function roadGeometryLines(geometry) {
+  if (!geometry) return [];
+  if (geometry.type === 'LineString') return [geometry.coordinates];
+  if (geometry.type === 'MultiLineString') return geometry.coordinates;
+  return [];
 }
 
-function tryUnpaintTapAt(clientX, clientY) {
-  const bbox = [[clientX - 14, clientY - 14], [clientX + 14, clientY + 14]];
-  let feats = [];
-  try {
-    feats = map.queryRenderedFeatures(bbox, { layers: ['road-score'] });
-  } catch (err) {
-    return false;
-  }
-  for (let fi = 0; fi < feats.length; fi++) {
-    const f = feats[fi];
-    const fid = f.id !== undefined ? f.id : f.properties && f.properties.tile_id;
-    if (fid != null && selectedSegments.has(fid)) {
-      removeSegmentSelection(fid);
-      return true;
+function featureTouchesMapBounds(feature, bounds) {
+  const lines = roadGeometryLines(feature.geometry);
+  return lines.some(line => line.some(([lng, lat]) =>
+    bounds.contains([lng, lat])
+  ));
+}
+
+function routeLengthMeters(lines) {
+  const radians = Math.PI / 180;
+  let length = 0;
+  for (const line of lines) {
+    for (let i = 1; i < line.length; i++) {
+      const lat1 = line[i - 1][1] * radians;
+      const lat2 = line[i][1] * radians;
+      const deltaLat = (line[i][1] - line[i - 1][1]) * radians;
+      const deltaLng = (line[i][0] - line[i - 1][0]) * radians;
+      const haversine = Math.sin(deltaLat / 2) ** 2 +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+      length += 6371008.8 * 2 * Math.atan2(
+        Math.sqrt(haversine),
+        Math.sqrt(1 - haversine)
+      );
     }
   }
-  return false;
+  return Math.max(1, length);
 }
 
-function toggleUnpaintMode() {
-  if (paintMode) togglePaintMode();
-  if (unpaintMode && unpainting) {
-    unpainting = false;
-    if (unpaintSnapThrottle) { clearTimeout(unpaintSnapThrottle); unpaintSnapThrottle = null; }
+function collectVisibleRoadSegments() {
+  const bounds = map.getBounds();
+  const roadsByGeometry = new Map();
+  const features = map.querySourceFeatures('segments', {
+    sourceLayer: 'survey_segments',
+  });
+
+  for (const feature of features) {
+    const props = feature.properties || {};
+    const tileId = Number(feature.id ?? props.tile_id);
+    if (!props.segment_id || !Number.isFinite(tileId) || !featureTouchesMapBounds(feature, bounds)) continue;
+
+    const geometryKey = JSON.stringify(feature.geometry);
+    const key = `${props.segment_id}:${geometryKey}`;
+    if (roadsByGeometry.has(key)) continue;
+
+    const lines = roadGeometryLines(feature.geometry);
+    roadsByGeometry.set(key, {
+      geometry: feature.geometry,
+      featureId: tileId,
+      props,
+      segmentId: String(props.segment_id),
+      routeName: props.route_name || '',
+      lines,
+    });
   }
-  unpaintMode = !unpaintMode;
-  document.getElementById('unpaintBtn').classList.toggle('active', unpaintMode);
-  unpaintCanvas.style.pointerEvents = unpaintMode ? 'all' : 'none';
-  unpaintHint.classList.toggle('visible', unpaintMode);
-  if (unpaintMode) {
-    map.dragPan.disable();
-    map.scrollZoom.disable();
-    map.doubleClickZoom.disable();
-    map.touchZoomRotate.disable();
-    map.getCanvas().style.cursor = '';
-  } else {
-    cancelUnpaintFade();
-    if (!paintMode) {
-      map.dragPan.enable();
-      map.scrollZoom.enable();
-      map.doubleClickZoom.enable();
-      map.touchZoomRotate.enable();
-    }
+  return [...roadsByGeometry.values()];
+}
+
+function pointToLineDistance(point, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1,
+    ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared
+  ));
+  return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
+}
+
+const ROUTE_MATCH_MAX_DISTANCE_PX = 30;
+const ROUTE_MATCH_SAMPLE_SPACING_PX = 8;
+
+function matchRouteToRoadSegments(routeGeometry, roads) {
+  if (!routeGeometry || routeGeometry.type !== 'LineString') {
+    throw new Error('The route tool did not return a LineString.');
   }
-}
 
-unpaintCanvas.addEventListener('pointerdown', (e) => {
-  unpainting = true;
-  unpaintPoints = [{ x: e.clientX, y: e.clientY }];
-  unpaintCanvas.setPointerCapture(e.pointerId);
-  cancelUnpaintFade();
-});
-
-unpaintCanvas.addEventListener('pointermove', (e) => {
-  if (!unpainting) return;
-  unpaintPoints.push({ x: e.clientX, y: e.clientY });
-  drawSplineUnpaint(unpaintPoints, 0.72);
-  if (!unpaintSnapThrottle) {
-    const pt = { x: e.clientX, y: e.clientY };
-    unpaintSnapThrottle = setTimeout(() => {
-      eraseNearPaintPoint(pt);
-      unpaintSnapThrottle = null;
-    }, 50);
-  }
-});
-
-unpaintCanvas.addEventListener('pointerup', (e) => {
-  unpainting = false;
-  unpaintPoints.push({ x: e.clientX, y: e.clientY });
-  if (unpaintSnapThrottle) { clearTimeout(unpaintSnapThrottle); unpaintSnapThrottle = null; }
-  if (isStrokeTapGesture(unpaintPoints)) {
-    tryUnpaintTapAt(e.clientX, e.clientY);
-  } else {
-    eraseNearPaintPoint({ x: e.clientX, y: e.clientY });
-  }
-  fadeUnpaintStroke();
-});
-
-unpaintCanvas.addEventListener('pointercancel', () => {
-  unpainting = false;
-  if (unpaintSnapThrottle) { clearTimeout(unpaintSnapThrottle); unpaintSnapThrottle = null; }
-  fadeUnpaintStroke();
-});
-
-const MOMENTUM_SMOOTH = 0.25;
-const MIN_MOVE        = 12;
-const PERP_PENALTY    = 3.5;
-const SNAP_RADIUS     = 40;
-
-function resetMomentum() {
-  momX = 0; momY = 0; momReady = false;
-}
-
-function updateMomentum(pts) {
-  if (pts.length < 3) return;
-  const lookback = Math.min(10, pts.length - 1);
-  const p0 = pts[pts.length - 1 - lookback];
-  const p1 = pts[pts.length - 1];
-  const dx = p1.x - p0.x, dy = p1.y - p0.y;
-  const len = Math.hypot(dx, dy);
-  if (len < MIN_MOVE) return;
-
-  const nx = dx / len, ny = dy / len;
-  momX = momX * (1 - MOMENTUM_SMOOTH) + nx * MOMENTUM_SMOOTH;
-  momY = momY * (1 - MOMENTUM_SMOOTH) + ny * MOMENTUM_SMOOTH;
-  const mlen = Math.hypot(momX, momY);
-  if (mlen > 0) { momX /= mlen; momY /= mlen; }
-  momReady = true;
-}
-
-function ptSegDist(px, py, ax, ay, bx, by) {
-  const dx = bx - ax, dy = by - ay;
-  const lenSq = dx * dx + dy * dy;
-  if (lenSq === 0) return Math.hypot(px - ax, py - ay);
-  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
-  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
-}
-
-function getStrokeDirectionFrom(pts, fromIdx, span) {
-  const toIdx = Math.min(fromIdx + Math.max(span, 4), pts.length - 1);
-  if (toIdx <= fromIdx) return null;
-  const p0 = pts[fromIdx], p1 = pts[toIdx];
-  const dx = p1.x - p0.x, dy = p1.y - p0.y;
-  const len = Math.hypot(dx, dy);
-  if (len < 5) return null;
-  return { nx: dx / len, ny: dy / len };
-}
-
-function clearPendingIfUnreferenced(featureId) {
-  if (selectedSegments.has(featureId)) return;
-  const still = snapQueue.some(q => q.featureId === featureId);
-  if (!still) {
-    map.setFeatureState(
-      { source: 'segments', sourceLayer: 'survey_segments', id: featureId },
-      { pending: false }
-    );
-  }
-}
-
-function findBestCandidate(pt, opts) {
-  opts = opts || {};
-  const ovr = opts.dirOverride;
-  const useNx = ovr && ovr.ready ? ovr.nx : momX;
-  const useNy = ovr && ovr.ready ? ovr.ny : momY;
-  const useReady = ovr ? !!ovr.ready : momReady;
-  const allowSelected = opts.allowSelected === true;
-  const avoidRevisit = opts.avoidRevisit === true;
-  const onlyFeatureIds = opts.onlyFeatureIds;
-
-  const bbox = [
-    [pt.x - SNAP_RADIUS, pt.y - SNAP_RADIUS],
-    [pt.x + SNAP_RADIUS, pt.y + SNAP_RADIUS]
-  ];
-  const features = map.queryRenderedFeatures(bbox, { layers: ['road-score'] });
-  if (!features.length) return null;
-
-  let minScore = SNAP_RADIUS * PERP_PENALTY;
-  let best = null;
-
-  for (let fi = 0; fi < features.length; fi++) {
-    const f = features[fi];
-    if (!f.geometry) continue;
-    const candFid = f.id !== undefined ? f.id : f.properties.tile_id;
-    const candFidStr = candFid == null ? null : String(candFid);
-    if (onlyFeatureIds && onlyFeatureIds.size && candFidStr != null && !onlyFeatureIds.has(candFidStr)) {
-      continue;
-    }
-    const lines = f.geometry.type === 'LineString'
-      ? [f.geometry.coordinates]
-      : f.geometry.coordinates;
-
-    for (let li = 0; li < lines.length; li++) {
-      const coords = lines[li];
-      for (let i = 0; i < coords.length - 1; i++) {
-        const a = map.project([coords[i][0], coords[i][1]]);
-        const b = map.project([coords[i + 1][0], coords[i + 1][1]]);
-        const dist = ptSegDist(pt.x, pt.y, a.x, a.y, b.x, b.y);
-        if (dist >= SNAP_RADIUS) continue;
-
-        let penalty = 1;
-        if (useReady) {
-          const sdx = b.x - a.x, sdy = b.y - a.y;
-          const slen = Math.hypot(sdx, sdy);
-          if (slen > 0) {
-            const alignment = Math.abs((sdx / slen) * useNx + (sdy / slen) * useNy);
-            penalty = PERP_PENALTY - (PERP_PENALTY - 1) * alignment;
-          }
-        }
-
-        let contMult = 1;
-        if (lastCommittedEdge) {
-          const d1 = Math.hypot(a.x - lastCommittedEdge.ax, a.y - lastCommittedEdge.ay);
-          const d2 = Math.hypot(a.x - lastCommittedEdge.bx, a.y - lastCommittedEdge.by);
-          const d3 = Math.hypot(b.x - lastCommittedEdge.ax, b.y - lastCommittedEdge.ay);
-          const d4 = Math.hypot(b.x - lastCommittedEdge.bx, b.y - lastCommittedEdge.by);
-          if (Math.min(d1, d2, d3, d4) < CONTINUITY_PX) contMult = CONTINUITY_SCORE_MULT;
-        }
-
-        let score = dist * penalty * contMult;
-        const featureId = f.id !== undefined ? f.id : f.properties.tile_id;
-        if (avoidRevisit && selectedSegments.has(featureId)) score *= AVOID_REVISIT_MULT;
-
-        if (score < minScore) {
-          minScore = score;
-          const sdx = b.x - a.x, sdy = b.y - a.y;
-          const slen = Math.hypot(sdx, sdy) || 1;
-          best = {
-            featureId,
-            props: f.properties,
-            segNx: sdx / slen,
-            segNy: sdy / slen,
-            edge: { ax: a.x, ay: a.y, bx: b.x, by: b.y },
-            vertexLLA: [coords[i][0], coords[i][1]],
-            vertexLLB: [coords[i + 1][0], coords[i + 1][1]],
-            lineEndpointA: [coords[0][0], coords[0][1]],
-            lineEndpointB: [coords[coords.length - 1][0], coords[coords.length - 1][1]],
-          };
-        }
+  const matched = [];
+  let unmatchedPieces = 0;
+  let maxDistancePixels = 0;
+  const projectedRoadEdges = [];
+  for (const road of roads) {
+    for (const line of road.lines) {
+      for (let i = 1; i < line.length; i++) {
+        projectedRoadEdges.push({
+          road,
+          start: map.project(line[i - 1]),
+          end: map.project(line[i]),
+        });
       }
     }
   }
 
-  if (!best || best.featureId === undefined || best.featureId === null) return null;
-  if (!allowSelected && selectedSegments.has(best.featureId)) return null;
-  return best;
+  const coords = routeGeometry.coordinates;
+  for (let i = 1; i < coords.length; i++) {
+    const start = map.project(coords[i - 1]);
+    const end = map.project(coords[i]);
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / ROUTE_MATCH_SAMPLE_SPACING_PX));
+
+    for (let step = 0; step < steps; step++) {
+      const ratio = (step + 0.5) / steps;
+      const sample = { x: start.x + dx * ratio, y: start.y + dy * ratio };
+      let closest = null;
+
+      for (const edge of projectedRoadEdges) {
+        const distance = pointToLineDistance(sample, edge.start, edge.end);
+        if (!closest || distance < closest.distance) closest = { road: edge.road, distance };
+      }
+
+      if (!closest || closest.distance > ROUTE_MATCH_MAX_DISTANCE_PX) {
+        unmatchedPieces++;
+        continue;
+      }
+      maxDistancePixels = Math.max(maxDistancePixels, closest.distance);
+      const previous = matched[matched.length - 1];
+      if (previous?.segmentId !== closest.road.segmentId) {
+        matched.push({
+          ...closest.road,
+          distancePixels: closest.distance,
+          lowConfidence: closest.distance > ROUTE_MATCH_SAMPLE_SPACING_PX,
+        });
+      } else if (closest.distance < previous.distancePixels) {
+        previous.distancePixels = closest.distance;
+        previous.lowConfidence = closest.distance > ROUTE_MATCH_SAMPLE_SPACING_PX;
+      }
+    }
+  }
+
+  return { matched, unmatchedPieces, maxDistancePixels };
 }
 
-function commitSegment(featureId, props, edge, geoCenter, endpoints) {
+function routeRoadGroups(roads) {
+  const groups = [];
+  for (const road of roads) {
+    const name = road.routeName || 'Unnamed road';
+    const last = groups[groups.length - 1];
+    if (last && last.name === name) {
+      last.count++;
+    } else {
+      groups.push({ name, count: 1 });
+    }
+  }
+  return groups;
+}
+
+function setRouteDrawingReview(roads) {
+  const review = document.getElementById('route-drawing-review');
+  const title = document.getElementById('route-drawing-review-title');
+  review.replaceChildren();
+  const groups = routeRoadGroups(roads);
+  for (const group of groups) {
+    const item = document.createElement('li');
+    item.textContent = `${group.name} (${group.count} block${group.count === 1 ? '' : 's'})`;
+    review.appendChild(item);
+  }
+
+  review.hidden = review.children.length === 0;
+  title.hidden = review.children.length === 0;
+}
+
+function scheduleRouteDrawingPreview() {
+  if (!routeDrawingActive() || routeDrawingPreviewScheduled) return;
+  routeDrawingPreviewScheduled = true;
+  requestAnimationFrame(() => {
+    routeDrawingPreviewScheduled = false;
+    if (!routeDrawingActive()) return;
+
+    const waypoints = getRouteDrawingWaypoints();
+    const finalFeature = JSON.parse(routeDrawingTool.inner.toFinalFeature() || 'null');
+    const signature = JSON.stringify({
+      waypoints: waypoints.map(waypoint => [waypoint.lon, waypoint.lat]),
+      route: finalFeature?.geometry?.coordinates || [],
+    });
+    if (signature === routeDrawingPreviewSignature) return;
+    routeDrawingPreviewSignature = signature;
+
+    const mapping = finalFeature
+      ? matchRouteToRoadSegments(finalFeature.geometry, activeRouteRoadSegments)
+      : { matched: [] };
+    setRouteDrawingReview(mapping.matched);
+    if (waypoints.length === 1) {
+      setRouteDrawingStatus('Start point set. Tap a green dot to choose your destination.');
+    } else if (waypoints.length > 1) {
+      const blocks = mapping.matched.length;
+      setRouteDrawingStatus(`Route includes ${blocks} block${blocks === 1 ? '' : 's'}. Tap a green dot to add a route segment.`);
+    } else {
+      setRouteDrawingStatus('Tap a green dot to set your start point.');
+    }
+  });
+}
+
+function applySnappedRoute(feature) {
+  const mapping = matchRouteToRoadSegments(feature.geometry, activeRouteRoadSegments);
+  if (!mapping.matched.length) {
+    setRouteDrawingStatus(
+      'No nearby streets matched this route. Try tapping closer to the green dots.'
+    );
+    return;
+  }
+
+  clearSelection();
+  for (const road of mapping.matched) {
+    const firstLine = road.lines.find(line => line.length > 1);
+    const endpoints = firstLine
+      ? [firstLine[0], firstLine[firstLine.length - 1]]
+      : null;
+    const centerLine = road.lines[0] || [];
+    const center = centerLine[Math.floor(centerLine.length / 2)] || null;
+    commitSegment(road.featureId, road.props, center, endpoints);
+  }
+  setRouteDrawingReview(mapping.matched);
+  const confidenceNote = mapping.matched.some(road => road.lowConfidence)
+    ? ' Some parts of your route matched nearby streets; check the highlighted route.'
+    : '';
+  const gapNote = mapping.unmatchedPieces
+    ? ` ${mapping.unmatchedPieces} short part(s) could not be matched to a nearby street.`
+    : '';
+  setRouteDrawingStatus(
+    `Route ready to rate. Review the streets below.${confidenceNote}${gapNote}`
+  );
+  routeDrawingActions.hidden = false;
+  routeDrawingPanel.classList.add('route-complete');
+}
+
+function clearSelectedRoute() {
+  clearSelection();
+  routeDrawingActions.hidden = true;
+  routeDrawingPanel.classList.remove('route-complete');
+  setRouteDrawingReview([]);
+  startRouteDrawing();
+  setRouteDrawingStatus('Route cleared. Tap a green dot to set your start point.');
+}
+
+function redrawSelectedRoute() {
+  clearSelection();
+  routeDrawingActions.hidden = true;
+  routeDrawingPanel.classList.remove('route-complete');
+  setRouteDrawingReview([]);
+  routeDrawingPanel.classList.remove('minimized');
+  startRouteDrawing();
+}
+
+function rateSelectedRoute() {
+  routeDrawingPanel.classList.add('minimized');
+  routeDrawingPanelMinimizeButton.textContent = '+';
+  routeDrawingPanelMinimizeButton.setAttribute('aria-label', 'Expand route panel');
+  routeDrawingPanelMinimizeButton.title = 'Expand route panel';
+  routeDrawingPanelMinimizeButton.setAttribute('aria-expanded', 'false');
+  openSurveyPanel();
+}
+
+let activeRouteRoadSegments = [];
+
+async function waitForSurveyRoadTiles() {
+  const hasLoadedRoadFeatures = () =>
+    Boolean(map.getSource('segments')) &&
+    map.querySourceFeatures('segments', { sourceLayer: 'survey_segments' }).length > 0;
+  if (hasLoadedRoadFeatures()) return;
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      map.off('idle', checkLoaded);
+      map.off('sourcedata', checkLoaded);
+      reject(new Error('Timed out waiting for the survey road tiles.'));
+    }, 30000);
+    const checkLoaded = () => {
+      if (hasLoadedRoadFeatures()) {
+        clearTimeout(timeout);
+        map.off('idle', checkLoaded);
+        map.off('sourcedata', checkLoaded);
+        resolve();
+      }
+    };
+    map.on('idle', checkLoaded);
+    map.on('sourcedata', checkLoaded);
+    checkLoaded();
+  });
+}
+
+function leaveRouteDrawingMode(message) {
+  if (routeDrawingActive()) routeDrawingTool.stop();
+  if (map.getLayer('route-network-nodes')) {
+    map.setLayoutProperty('route-network-nodes', 'visibility', 'none');
+  }
+  routeDrawingPanel.classList.remove('open');
+  document.getElementById('routeDrawingBtn').classList.remove('active');
+  if (message) setRouteDrawingStatus(message);
+}
+
+function refreshRouteDrawing() {
+  if (!routeDrawingTool?.loaded) return;
+  const rendered = JSON.parse(routeDrawingTool.inner.renderGeojson());
+  map.getSource('route-snapper').setData(rendered);
+  const undoButton = routeDrawingControls.querySelector('#undo-button');
+  if (undoButton) {
+    if (undoButton.textContent !== 'Undo') undoButton.textContent = 'Undo';
+    undoButton.disabled = routeDrawingUndoStack.length === 0;
+  }
+}
+
+function getRouteDrawingWaypoints(inner = routeDrawingTool.inner, includeHovered = false) {
+  const feature = JSON.parse(inner.toFinalFeature() || 'null');
+  if (feature?.properties?.waypoints) {
+    return feature.properties.waypoints.map(waypoint => ({ ...waypoint }));
+  }
+  return JSON.parse(inner.renderGeojson()).features
+    .filter(item => {
+      if (item.geometry?.type !== 'Point' || !/waypoint/.test(item.properties?.type || '')) {
+        return false;
+      }
+      if (!item.properties?.hovered || includeHovered) return true;
+      const [lon, lat] = item.geometry.coordinates;
+      return routeDrawingLastWaypoints.some(waypoint =>
+        Math.abs(waypoint.lon - lon) < 1e-7 &&
+        Math.abs(waypoint.lat - lat) < 1e-7
+      );
+    })
+    .map(item => ({
+      lon: item.geometry.coordinates[0],
+      lat: item.geometry.coordinates[1],
+      snapped: item.properties.type === 'snapped-waypoint',
+    }));
+}
+
+function customizeRouteDrawingControls() {
+  for (const id of ['avoidDoublingBack', 'extendRoute', 'areaMode', 'add-waypoint-value']) {
+    const input = routeDrawingControls.querySelector(`#${id}`);
+    const container = input?.closest('div');
+    if (container) container.hidden = true;
+  }
+
+  for (const list of routeDrawingControls.querySelectorAll('ul')) list.hidden = true;
+  for (const paragraph of routeDrawingControls.querySelectorAll('p')) paragraph.hidden = true;
+
+  const undoButton = routeDrawingControls.querySelector('#undo-button');
+  if (undoButton && !undoButton.dataset.spanUndoBound) {
+    undoButton.onclick = undoRouteDrawingAction;
+    undoButton.dataset.spanUndoBound = 'true';
+  }
+  routeDrawingControlObserver?.disconnect();
+  routeDrawingControlObserver = new MutationObserver(() => refreshRouteDrawing());
+  routeDrawingControlObserver.observe(routeDrawingControls, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+  });
+  refreshRouteDrawing();
+}
+
+function undoRouteDrawingAction() {
+  if (!routeDrawingActive() || !routeDrawingUndoStack.length) return;
+  const previousWaypoints = routeDrawingUndoStack.pop();
+  if (previousWaypoints.length) {
+    routeDrawingTool.inner.editExisting(previousWaypoints);
+  } else {
+    routeDrawingTool.inner.clearState();
+  }
+  routeDrawingEndpointDragBefore = null;
+  routeDrawingDragBefore = null;
+  routeDrawingLastWaypoints = previousWaypoints.map(waypoint => ({ ...waypoint }));
+  refreshRouteDrawing();
+  scheduleRouteDrawingPreview();
+}
+
+function installRouteDrawingInteractionEnhancements() {
+  const inner = routeDrawingTool.inner;
+  if (inner.__rideScoreEnhanced) return;
+  inner.__rideScoreEnhanced = true;
+
+  const canvas = map.getCanvas();
+  if (!canvas.dataset.routeDrawingDoubleClickGuard) {
+    canvas.addEventListener('dblclick', event => {
+      if (!routeDrawingActive()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    }, true);
+    canvas.dataset.routeDrawingDoubleClickGuard = 'true';
+  }
+  const getPointerMapPosition = event => {
+    const rect = canvas.getBoundingClientRect();
+    const point = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    return { point, lngLat: map.unproject(point) };
+  };
+  const updateWaypointDrag = event => {
+    const { point, lngLat } = getPointerMapPosition(event);
+    const nearby = { x: point.x - 30, y: point.y };
+    const radius = lngLat.distanceTo(map.unproject(nearby));
+    inner.onMouseMove(lngLat.lng, lngLat.lat, radius);
+  };
+  canvas.addEventListener('pointerdown', event => {
+    if (!routeDrawingActive() || event.pointerType !== 'mouse' || event.button !== 0) return;
+    updateWaypointDrag(event);
+    const hoveredWaypoint = JSON.parse(inner.renderGeojson()).features.some(feature =>
+      feature.properties?.hovered &&
+      feature.geometry?.type === 'Point' &&
+      feature.properties?.type === 'snapped-waypoint'
+    );
+    if (hoveredWaypoint) {
+      routeDrawingMousePointerCandidate = {
+        pointerId: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+      };
+    }
+  }, true);
+  canvas.addEventListener('pointermove', event => {
+    if (routeDrawingMousePointerCandidate?.pointerId === event.pointerId) {
+      updateWaypointDrag(event);
+      const moved = Math.hypot(
+        event.clientX - routeDrawingMousePointerCandidate.x,
+        event.clientY - routeDrawingMousePointerCandidate.y,
+      );
+      if (moved >= 4) {
+        routeDrawingMousePointerCandidate = null;
+        if (!inner.onDragStart()) return;
+        routeDrawingMousePointerId = event.pointerId;
+        map.dragPan.disable();
+        canvas.setPointerCapture(event.pointerId);
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        refreshRouteDrawing();
+        return;
+      }
+    }
+    if (routeDrawingMousePointerId !== event.pointerId) return;
+    updateWaypointDrag(event);
+    refreshRouteDrawing();
+    scheduleRouteDrawingPreview();
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  const finishMouseWaypointDrag = event => {
+    if (routeDrawingMousePointerCandidate?.pointerId === event.pointerId) {
+      routeDrawingMousePointerCandidate = null;
+    }
+    if (routeDrawingMousePointerId !== event.pointerId) return;
+    routeDrawingMousePointerId = null;
+    inner.onMouseUp();
+    map.dragPan.enable();
+    refreshRouteDrawing();
+    scheduleRouteDrawingPreview();
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  };
+  canvas.addEventListener('pointerup', finishMouseWaypointDrag, true);
+  canvas.addEventListener('pointercancel', finishMouseWaypointDrag, true);
+
+  const originalDragStart = inner.onDragStart.bind(inner);
+  inner.onDragStart = function (...args) {
+    const waypoints = getRouteDrawingWaypoints(this);
+    const hovered = JSON.parse(this.renderGeojson()).features.find(item =>
+      item.properties?.hovered &&
+      item.geometry?.type === 'Point' &&
+      item.properties?.type === 'snapped-waypoint'
+    );
+    const end = waypoints[waypoints.length - 1];
+    const point = hovered?.geometry?.coordinates;
+    const draggingEnd = end && point &&
+      Math.abs(point[0] - end.lon) < 1e-7 &&
+      Math.abs(point[1] - end.lat) < 1e-7;
+    const started = originalDragStart(...args);
+    routeDrawingDragBefore = started ? waypoints : null;
+    routeDrawingEndpointDragBefore = started && draggingEnd && waypoints.length > 1
+      ? waypoints
+      : null;
+    return started;
+  };
+
+  const originalMouseUp = inner.onMouseUp.bind(inner);
+  inner.onMouseUp = function (...args) {
+    const before = routeDrawingDragBefore;
+    const savedRoute = routeDrawingEndpointDragBefore;
+    const endedDrag = originalMouseUp(...args);
+    if (endedDrag && savedRoute) {
+      const movedRoute = getRouteDrawingWaypoints(this);
+      const oldEnd = savedRoute[savedRoute.length - 1];
+      const newEnd = movedRoute[movedRoute.length - 1];
+      if (newEnd && movedRoute.length === savedRoute.length &&
+          (Math.abs(newEnd.lon - oldEnd.lon) >= 1e-7 || Math.abs(newEnd.lat - oldEnd.lat) >= 1e-7)) {
+        this.editExisting([...savedRoute, newEnd]);
+      }
+    }
+    const after = getRouteDrawingWaypoints(this);
+    if (endedDrag && before && JSON.stringify(before) !== JSON.stringify(after)) {
+      routeDrawingUndoStack.push(before);
+      routeDrawingLastWaypoints = after.map(waypoint => ({ ...waypoint }));
+    }
+    routeDrawingEndpointDragBefore = null;
+    routeDrawingDragBefore = null;
+    return endedDrag;
+  };
+
+  const originalClick = inner.onClick.bind(inner);
+  inner.onClick = function (...args) {
+    if (routeDrawingSuppressTouchClick) {
+      routeDrawingSuppressTouchClick = false;
+      return;
+    }
+    const hoveredWaypoint = JSON.parse(this.renderGeojson()).features.find(feature =>
+      feature.properties?.hovered &&
+      feature.geometry?.type === 'Point' &&
+      feature.properties?.type === 'snapped-waypoint'
+    );
+    if (hoveredWaypoint) {
+      const waypoints = routeDrawingLastWaypoints.map(waypoint => ({ ...waypoint }));
+      const [lon, lat] = hoveredWaypoint.geometry.coordinates;
+      const waypointIndex = waypoints.findIndex(waypoint =>
+        Math.abs(waypoint.lon - lon) < 1e-7 &&
+        Math.abs(waypoint.lat - lat) < 1e-7
+      );
+      if (waypointIndex >= 0) {
+        routeDrawingUndoStack.push(waypoints);
+        waypoints.splice(waypointIndex, 1);
+        if (waypoints.length) {
+          this.editExisting(waypoints);
+        } else {
+          this.clearState();
+        }
+        routeDrawingLastWaypoints = waypoints.map(waypoint => ({ ...waypoint }));
+        routeDrawingWaypointClickHandled = true;
+        return;
+      }
+    }
+    originalClick(...args);
+  };
+
+  map.on('mousemove', scheduleRouteDrawingPreview);
+  map.on('click', () => {
+    if (routeDrawingWaypointClickHandled) {
+      routeDrawingWaypointClickHandled = false;
+      refreshRouteDrawing();
+      scheduleRouteDrawingPreview();
+      return;
+    }
+    const waypoints = getRouteDrawingWaypoints(inner, true);
+    if (JSON.stringify(routeDrawingLastWaypoints) !== JSON.stringify(waypoints)) {
+      if (routeDrawingLastWaypoints.length > 0) {
+        routeDrawingUndoStack.push(routeDrawingLastWaypoints);
+      }
+      routeDrawingLastWaypoints = waypoints.map(waypoint => ({ ...waypoint }));
+    }
+    refreshRouteDrawing();
+    scheduleRouteDrawingPreview();
+  });
+  map.on('mouseup', () => {
+    refreshRouteDrawing();
+    scheduleRouteDrawingPreview();
+  });
+  map.on('touchstart', event => {
+    if (!routeDrawingActive() || !event.lngLat || !event.point) return;
+    const nearby = { x: event.point.x - 30, y: event.point.y };
+    const radius = map.unproject(event.point).distanceTo(map.unproject(nearby));
+    inner.onMouseMove(event.lngLat.lng, event.lngLat.lat, radius);
+    routeDrawingTouchDragging = inner.onDragStart();
+    if (routeDrawingTouchDragging) {
+      map.dragPan.disable();
+      event.originalEvent?.preventDefault();
+      refreshRouteDrawing();
+    }
+  });
+  map.on('touchmove', event => {
+    if (!routeDrawingActive() || !routeDrawingTouchDragging || !event.lngLat || !event.point) return;
+    const nearby = { x: event.point.x - 30, y: event.point.y };
+    const radius = map.unproject(event.point).distanceTo(map.unproject(nearby));
+    inner.onMouseMove(event.lngLat.lng, event.lngLat.lat, radius);
+    refreshRouteDrawing();
+    scheduleRouteDrawingPreview();
+  });
+  map.on('touchend', () => {
+    if (!routeDrawingTouchDragging) return;
+    inner.onMouseUp();
+    routeDrawingTouchDragging = false;
+    map.dragPan.enable();
+    routeDrawingSuppressTouchClick = true;
+    setTimeout(() => { routeDrawingSuppressTouchClick = false; }, 500);
+    refreshRouteDrawing();
+    scheduleRouteDrawingPreview();
+  });
+}
+
+function styleRouteDrawingLayers() {
+  if (!map.getLayer('route-points')) return;
+  map.setPaintProperty('route-points', 'circle-radius', [
+    'match',
+    ['get', 'type'],
+    'node', 9,
+    18,
+  ]);
+  map.setPaintProperty('route-points', 'circle-color', [
+    'match',
+    ['get', 'type'],
+    'snapped-waypoint', '#f97316',
+    'free-waypoint', '#2563eb',
+    '#16a34a',
+  ]);
+  map.setPaintProperty('route-points', 'circle-stroke-color', '#fff');
+  map.setPaintProperty('route-points', 'circle-stroke-width', 2);
+  if (map.getLayer('route-lines')) {
+    map.setPaintProperty('route-lines', 'line-width', 4);
+  }
+  if (!map.getSource('route-network-nodes')) {
+    const nodes = JSON.parse(routeDrawingTool.inner.debugSnappableNodes());
+    map.addSource('route-network-nodes', {
+      type: 'geojson',
+      data: nodes,
+    });
+    map.addLayer({
+      id: 'route-network-nodes',
+      type: 'circle',
+      source: 'route-network-nodes',
+      paint: {
+        'circle-radius': 5,
+        'circle-color': '#16a34a',
+        'circle-opacity': 0.9,
+        'circle-stroke-color': '#fff',
+        'circle-stroke-width': 1.5,
+      },
+    }, 'route-points');
+  }
+}
+
+function startRouteDrawing() {
+  routeDrawingPanel.classList.add('open');
+  routeDrawingPanel.classList.remove('route-complete');
+  routeDrawingPanel.classList.remove('minimized');
+  routeDrawingPanelMinimizeButton.textContent = '−';
+  routeDrawingPanelMinimizeButton.setAttribute('aria-label', 'Minimize route panel');
+  routeDrawingPanelMinimizeButton.title = 'Minimize route panel';
+  routeDrawingPanelMinimizeButton.setAttribute('aria-expanded', 'true');
+  routeDrawingActions.hidden = true;
+  document.getElementById('routeDrawingBtn').classList.add('active');
+  routeDrawingTool.start();
+  routeDrawingTool.inner.setRouteConfig({ avoid_doubling_back: false, extend_route: true });
+  routeDrawingPreviewSignature = '';
+  routeDrawingUndoStack = [];
+  routeDrawingLastWaypoints = [];
+  routeDrawingEndpointDragBefore = null;
+  routeDrawingDragBefore = null;
+  routeDrawingTouchDragging = false;
+  routeDrawingMousePointerId = null;
+  routeDrawingMousePointerCandidate = null;
+  routeDrawingWaypointClickHandled = false;
+  if (map.getLayer('route-network-nodes')) {
+    map.setLayoutProperty('route-network-nodes', 'visibility', 'visible');
+  }
+  customizeRouteDrawingControls();
+  setRouteDrawingReview([]);
+  setRouteDrawingStatus('Tap a green dot to set your start point.');
+}
+
+function attachRouteDrawingEvents() {
+  routeDrawingControls.addEventListener('activate', () => {
+    document.getElementById('routeDrawingBtn').classList.add('active');
+    customizeRouteDrawingControls();
+    setRouteDrawingStatus('Tap a green dot to set your start point.');
+  });
+  routeDrawingControls.addEventListener('no-new-route', () => {
+    document.getElementById('routeDrawingBtn').classList.remove('active');
+    setRouteDrawingStatus('No route was added. Tap Draw route to try again.');
+  });
+  routeDrawingControls.addEventListener('new-route', event => {
+    document.getElementById('routeDrawingBtn').classList.remove('active');
+    if (map.getLayer('route-network-nodes')) {
+      map.setLayoutProperty('route-network-nodes', 'visibility', 'none');
+    }
+    try {
+      applySnappedRoute(event.detail);
+    } catch (error) {
+      console.error('Could not map the snapped route to RideScore roads:', error);
+      setRouteDrawingStatus(`Route not added: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+}
+
+async function toggleRouteDrawing() {
+  const button = document.getElementById('routeDrawingBtn');
+  if (routeDrawingLoading) return;
+  if (routeDrawingActive()) {
+    leaveRouteDrawingMode('Route drawing canceled.');
+    return;
+  }
+
+  routeDrawingPanel.classList.add('open');
+  routeDrawingPanel.classList.remove('minimized');
+  button.classList.add('active');
+
+  if (routeDrawingTool) {
+    styleRouteDrawingLayers();
+    startRouteDrawing();
+    return;
+  }
+
+  routeDrawingLoading = true;
+  button.disabled = true;
+  setRouteDrawingStatus('Loading the unscored roads in the current map area and preparing the route graph…');
+  try {
+    await waitForSurveyRoadTiles();
+    activeRouteRoadSegments = collectVisibleRoadSegments();
+    if (!activeRouteRoadSegments.length) {
+      throw new Error('No survey streets are loaded in this area. Pan to another area and try again.');
+    }
+
+    const { init, RouteSnapper: RouteDrawingTool } = await import('https://unpkg.com/route-snapper@0.4.9/lib.js');
+    await init();
+    const { default: initGeoJsonConverter, convert } = await import(
+      'https://dabreegster.github.io/route_snapper/geojson-to-route-snapper/pkg/geojson_to_route_snapper.js'
+    );
+    await initGeoJsonConverter();
+
+    const graphBytes = convert(JSON.stringify({
+      type: 'FeatureCollection',
+      features: activeRouteRoadSegments.flatMap(road => road.lines.map(line => ({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: line },
+        properties: {
+          name: road.routeName || road.segmentId,
+          forward_cost: routeLengthMeters([line]),
+          backward_cost: routeLengthMeters([line]),
+        },
+      }))),
+    }));
+    if (!graphBytes.length) throw new Error('The route graph converter returned an empty graph.');
+
+    routeDrawingTool = new RouteDrawingTool(map, graphBytes, routeDrawingControls);
+    attachRouteDrawingEvents();
+    const toolReady = routeDrawingTool.loaded
+      ? Promise.resolve()
+      : new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Route tool did not finish loading.')), 10000);
+        map.once('idle', () => {
+          clearTimeout(timeout);
+          if (routeDrawingTool.loaded) resolve();
+          else reject(new Error('Route tool setup did not complete.'));
+        });
+      });
+    map.triggerRepaint();
+    await toolReady;
+    styleRouteDrawingLayers();
+    installRouteDrawingInteractionEnhancements();
+    startRouteDrawing();
+  } catch (error) {
+    console.error('Could not initialize route drawing:', error);
+    setRouteDrawingStatus(`Could not load route drawing: ${error instanceof Error ? error.message : String(error)}.`);
+    button.classList.remove('active');
+  } finally {
+    routeDrawingLoading = false;
+    button.disabled = false;
+  }
+}
+
+/* Route selection state */
+let routeOrderedFeatureIds = [];
+const selectedSegments = new Map();
+const segmentGeoCenter = new Map();
+const segmentEndpoints = new Map();
+
+function commitSegment(featureId, props, geoCenter, endpoints) {
   if (selectedSegments.has(featureId)) return;
   selectedSegments.set(featureId, props);
   if (geoCenter) segmentGeoCenter.set(featureId, geoCenter);
   if (endpoints) segmentEndpoints.set(featureId, endpoints);
-  selectionHistory.push(featureId);
-  idsTouchedThisStroke.add(featureId);
-  if (strokeOrderedSegmentIds[strokeOrderedSegmentIds.length - 1] !== featureId) {
-    strokeOrderedSegmentIds.push(featureId);
+  if (routeOrderedFeatureIds[routeOrderedFeatureIds.length - 1] !== featureId) {
+    routeOrderedFeatureIds.push(featureId);
   }
-  if (edge) lastCommittedEdge = edge;
   map.setFeatureState(
     { source: 'segments', sourceLayer: 'survey_segments', id: featureId },
     { selected: true, pending: false }
   );
-  updateBadge();
-}
-
-function commitFromQueueItem(item) {
-  const gc = (item.vertexLLA && item.vertexLLB)
-    ? [(item.vertexLLA[0] + item.vertexLLB[0]) / 2, (item.vertexLLA[1] + item.vertexLLB[1]) / 2]
-    : null;
-  const ep = (item.lineEndpointA && item.lineEndpointB)
-    ? [item.lineEndpointA, item.lineEndpointB]
-    : null;
-  commitSegment(item.featureId, item.props, item.edge, gc, ep);
-}
-
-function tryDrainSnapQueue() {
-  while (snapQueue.length >= COMMIT_LAG) {
-    const head = snapQueue[0];
-    if (paintPoints.length - 1 < head.strokeIdx + 4) return;
-
-    snapQueue.shift();
-    clearPendingIfUnreferenced(head.featureId);
-
-    const span = Math.min(COMMIT_LAG + 4, paintPoints.length - 1 - head.strokeIdx);
-    const dir = getStrokeDirectionFrom(paintPoints, head.strokeIdx, span);
-    let commit = false;
-    if (dir) {
-      const al = Math.abs(dir.nx * head.segNx + dir.ny * head.segNy);
-      commit = al >= COMMIT_ALIGN_THRESHOLD;
-    }
-    if (commit) commitFromQueueItem(head);
-  }
-}
-
-function removeSegmentCompletely(featureId) {
-  if (!selectedSegments.has(featureId)) return;
-  selectedSegments.delete(featureId);
-  for (let i = selectionHistory.length - 1; i >= 0; i--) {
-    if (selectionHistory[i] === featureId) selectionHistory.splice(i, 1);
-  }
-  strokeOrderedSegmentIds = strokeOrderedSegmentIds.filter(x => x !== featureId);
-  map.setFeatureState(
-    { source: 'segments', sourceLayer: 'survey_segments', id: featureId },
-    { selected: false, pending: false }
-  );
-  updateBadge();
-  if (selectedSegments.size === 0) lastCommittedEdge = null;
-}
-
-function eraseNearPaintPoint(pt) {
-  const toRemove = new Set();
-  const bbox = [[pt.x - 44, pt.y - 44], [pt.x + 44, pt.y + 44]];
-  const features = map.queryRenderedFeatures(bbox, { layers: ['road-score'] });
-  const seenFeat = new Set();
-  for (let fi = 0; fi < features.length; fi++) {
-    const f = features[fi];
-    const key = f.properties && f.properties.tile_id != null ? String(f.properties.tile_id) : fi + '_' + fi;
-    if (!f.geometry || seenFeat.has(key)) continue;
-    seenFeat.add(key);
-    const fid = f.id !== undefined ? f.id : f.properties.tile_id;
-    if (fid === undefined || fid === null || !selectedSegments.has(fid)) continue;
-    const lines = f.geometry.type === 'LineString'
-      ? [f.geometry.coordinates]
-      : f.geometry.coordinates;
-    for (let li = 0; li < lines.length; li++) {
-      const coords = lines[li];
-      for (let i = 0; i < coords.length - 1; i++) {
-        const a = map.project([coords[i][0], coords[i][1]]);
-        const b = map.project([coords[i + 1][0], coords[i + 1][1]]);
-        const dist = ptSegDist(pt.x, pt.y, a.x, a.y, b.x, b.y);
-        if (dist < 28) toRemove.add(fid);
-      }
-    }
-  }
-  toRemove.forEach(id => removeSegmentCompletely(id));
-}
-
-function enqueuePaintSnap(pt) {
-  const cand = findBestCandidate(pt, { avoidRevisit: true });
-  if (!cand) return;
-
-  snapQueue.push({
-    featureId: cand.featureId,
-    props: cand.props,
-    strokeIdx: paintPoints.length - 1,
-    segNx: cand.segNx,
-    segNy: cand.segNy,
-    edge: cand.edge,
-    vertexLLA: cand.vertexLLA,
-    vertexLLB: cand.vertexLLB,
-    lineEndpointA: cand.lineEndpointA,
-    lineEndpointB: cand.lineEndpointB,
-  });
-
-  if (!selectedSegments.has(cand.featureId)) {
-    map.setFeatureState(
-      { source: 'segments', sourceLayer: 'survey_segments', id: cand.featureId },
-      { pending: true }
-    );
-  }
-  tryDrainSnapQueue();
-}
-
-function flushSnapQueueRelaxed() {
-  while (snapQueue.length > 0) {
-    const item = snapQueue.shift();
-    clearPendingIfUnreferenced(item.featureId);
-    if (selectedSegments.has(item.featureId)) continue;
-
-    const span = Math.max(paintPoints.length - 1 - item.strokeIdx, 4);
-    const dir = getStrokeDirectionFrom(paintPoints, item.strokeIdx, span);
-    let commit = true;
-    if (dir) {
-      const al = Math.abs(dir.nx * item.segNx + dir.ny * item.segNy);
-      if (al < COMMIT_ALIGN_RELAXED) commit = false;
-    }
-    if (commit) commitFromQueueItem(item);
-  }
-}
-
-function resampleUniform(pts, stepPx) {
-  if (pts.length < 2) return pts.map(p => ({ x: p.x, y: p.y }));
-  const out = [];
-  let cx = pts[0].x, cy = pts[0].y;
-  out.push({ x: cx, y: cy });
-  let segIdx = 0;
-  while (segIdx < pts.length - 1) {
-    const tx = pts[segIdx + 1].x, ty = pts[segIdx + 1].y;
-    const dx = tx - cx, dy = ty - cy;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 1e-6) { segIdx++; cx = tx; cy = ty; continue; }
-    if (dist >= stepPx) {
-      const t = stepPx / dist;
-      cx += dx * t;
-      cy += dy * t;
-      out.push({ x: cx, y: cy });
-    } else {
-      segIdx++;
-      cx = tx; cy = ty;
-    }
-  }
-  const last = pts[pts.length - 1];
-  const end = out[out.length - 1];
-  if (Math.hypot(last.x - end.x, last.y - end.y) > 2) out.push({ x: last.x, y: last.y });
-  return out;
-}
-
-function querySegmentFeatureById(fid) {
-  try {
-    const feats = map.querySourceFeatures('segments', { sourceLayer: 'survey_segments' });
-    return feats.find(f => f.properties && String(f.properties.tile_id) === String(fid)) || null;
-  } catch (err) {
-    return null;
-  }
-}
-
-function segmentMinDistToPolylineScreen(fid, smoothPts) {
-  const feat = querySegmentFeatureById(fid);
-  if (!feat || !feat.geometry) return null;
-  let minD = 1e9;
-  const lines = feat.geometry.type === 'LineString'
-    ? [feat.geometry.coordinates]
-    : feat.geometry.coordinates;
-  lines.forEach(coords => {
-    for (let i = 0; i < coords.length - 1; i++) {
-      for (const t of [0, 0.2, 0.5, 0.8, 1]) {
-        const lng = coords[i][0] + (coords[i + 1][0] - coords[i][0]) * t;
-        const lat = coords[i][1] + (coords[i + 1][1] - coords[i][1]) * t;
-        const p = map.project([lng, lat]);
-        for (let j = 0; j < smoothPts.length - 1; j++) {
-          const d = ptSegDist(
-            p.x, p.y,
-            smoothPts[j].x, smoothPts[j].y,
-            smoothPts[j + 1].x, smoothPts[j + 1].y
-          );
-          minD = Math.min(minD, d);
-        }
-      }
-    }
-  });
-  return minD === 1e9 ? null : minD;
-}
-
-/** Drop only segments added *this stroke* that sit far from *this stroke's* path.
-    Earlier painted segments are never judged against the new polyline. */
-function pruneSelectionsFarFromRawPolyline(rawChain) {
-  if (rawChain.length < 2 || idsTouchedThisStroke.size === 0) return;
-  const drop = [];
-  idsTouchedThisStroke.forEach(id => {
-    if (!selectedSegments.has(id)) return;
-    const md = segmentMinDistToPolylineScreen(id, rawChain);
-    if (md !== null && md > OUTLIER_PRUNE_PX) drop.push(id);
-  });
-  drop.forEach(removeSegmentSelection);
-}
-
-function finishStrokePipeline() {
-  flushSnapQueueRelaxed();
-  if (paintPoints.length >= 2) {
-    const rawChain = resampleUniform(paintPoints, RAW_PRUNE_SAMPLE_PX);
-    if (rawChain.length >= 2) pruneSelectionsFarFromRawPolyline(rawChain);
-  }
-  if (idsTouchedThisStroke.size > 0) {
-    strokeBatchesHistory.push([...idsTouchedThisStroke]);
-  }
-}
-
-/* ════════════════════════════════════════════════════════
-   SELECTION STATE
-════════════════════════════════════════════════════════ */
-const selectedSegments = new Map();
-const segmentGeoCenter  = new Map(); // tile_id -> [lng, lat] midpoint of best-matched edge
-const segmentEndpoints  = new Map(); // tile_id -> [[lngA,latA], [lngB,latB]] LineString endpoints
-
-function updateBadge() {
-  const n = selectedSegments.size;
-  const badge = document.getElementById('selection-badge');
-  badge.style.display = n > 0 ? 'flex' : 'none';
-  const nc = n > 0 ? buildContiguousSegments().length : 0;
-  document.getElementById('badge-count').textContent = `${nc} road${nc !== 1 ? 's' : ''} selected`;
-  const undoBtn = document.getElementById('badge-undo');
-  if (undoBtn) undoBtn.disabled = selectionHistory.length === 0;
-  const us = document.getElementById('badge-undo-stroke');
-  if (us) us.disabled = strokeBatchesHistory.length === 0;
-}
-
-function undoLastPaintStroke() {
-  const batch = strokeBatchesHistory.pop();
-  if (!batch || !batch.length) {
-    updateBadge();
-    return;
-  }
-  batch.forEach(id => removeSegmentCompletely(id));
 }
 
 function removeSegmentSelection(featureId) {
   if (!selectedSegments.has(featureId)) return;
   selectedSegments.delete(featureId);
-  for (let i = selectionHistory.length - 1; i >= 0; i--) {
-    if (selectionHistory[i] === featureId) {
-      selectionHistory.splice(i, 1);
-      break;
-    }
-  }
-  for (let i = strokeOrderedSegmentIds.length - 1; i >= 0; i--) {
-    if (strokeOrderedSegmentIds[i] === featureId) {
-      strokeOrderedSegmentIds.splice(i, 1);
-      break;
-    }
-  }
+  routeOrderedFeatureIds = routeOrderedFeatureIds.filter(id => id !== featureId);
+  segmentGeoCenter.delete(featureId);
+  segmentEndpoints.delete(featureId);
   map.setFeatureState(
     { source: 'segments', sourceLayer: 'survey_segments', id: featureId },
     { selected: false, pending: false }
   );
-  updateBadge();
-  if (selectedSegments.size === 0) lastCommittedEdge = null;
-}
-
-function undoLastSegment() {
-  if (!selectionHistory.length) return;
-  const id = selectionHistory.pop();
-  if (!selectedSegments.has(id)) {
-    updateBadge();
-    return;
-  }
-  selectedSegments.delete(id);
-  map.setFeatureState(
-    { source: 'segments', sourceLayer: 'survey_segments', id: id },
-    { selected: false, pending: false }
-  );
-  updateBadge();
-  if (selectedSegments.size === 0) lastCommittedEdge = null;
 }
 
 function clearSelection() {
-  if (unpaintMode) toggleUnpaintMode();
-  resetSnapQueueForNewStroke();
-  idsTouchedThisStroke.clear();
-  strokeBatchesHistory.length = 0;
-  strokeOrderedSegmentIds.length = 0;
-  selectionHistory.length = 0;
-  lastCommittedEdge = null;
-  selectedSegments.forEach((_, id) => {
+  for (const id of selectedSegments.keys()) {
     map.setFeatureState(
       { source: 'segments', sourceLayer: 'survey_segments', id },
       { selected: false, pending: false }
     );
-  });
+  }
   selectedSegments.clear();
+  routeOrderedFeatureIds.length = 0;
   segmentGeoCenter.clear();
   segmentEndpoints.clear();
-  updateBadge();
 }
-
-document.addEventListener('keydown', (e) => {
-  const t = e.target;
-  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
-
-  if (unpaintMode && e.key === 'Escape') {
-    e.preventDefault();
-    toggleUnpaintMode();
-    return;
-  }
-
-  if (!(e.ctrlKey || e.metaKey)) return;
-  if (e.key !== 'z' && e.key !== 'Z') return;
-  if (!selectionHistory.length) return;
-  e.preventDefault();
-  undoLastSegment();
-});
-
-/* ════════════════════════════════════════════════════════
-   PER-SEGMENT SURVEY
-════════════════════════════════════════════════════════ */
 
 const STRESS_FACTORS = [
   'Motor traffic speed',
@@ -1707,23 +1789,23 @@ let sumTripPurpose = null;  // optional
  *   is < ENDPOINT_THRESH degrees (~10 m).  Road-network intersection points
  *   are nominally identical; the threshold absorbs floating-point drift.
  *
- * STEP 2 — Connected components, ordered by first paint event
+ * STEP 2 — Connected components, ordered by first selection event
  *   Components are seeded from the unvisited segment with the lowest
- *   paint-order index, so disconnected stretches appear in the order the user
+ *   selection-order index, so disconnected stretches appear in the order the user
  *   first touched them.  Segment numbering is therefore continuous across
  *   components: if component A ends at survey node 3, component B starts at 4.
  *
  * STEP 3 — Direction-preserving linear walk per component
  *   a. Identify degree-1 nodes (the two ends of a linear route).
- *   b. From the FIRST-PAINTED segment of the component, BFS outward until
+ *   b. From the FIRST-SELECTED segment of the component, BFS outward until
  *      we reach a degree-1 node.  That node becomes the walk's start point,
  *      anchoring the counting direction to the side the user began drawing.
- *      (Intermediate segments added in later strokes cannot shift the start.)
+ *      (Segments added later cannot shift the start.)
  *   c. Greedy walk: at each step move to the unvisited neighbour with the
- *      lowest paint-order index — this follows the original drawing direction
+ *      lowest selection-order index — this follows the original drawing direction
  *      through turns and 90° bends.
  *   d. Any segments the main walk couldn't reach (rare branches, or segments
- *      lacking stored endpoint data) are appended in paint order at the end
+ *      lacking stored endpoint data) are appended in selection order at the end
  *      of that component's path.
  * ─────────────────────────────────────────────────────────────────────────── */
 const ENDPOINT_THRESH = 0.0001; // ~10 m at DC latitude
@@ -1732,10 +1814,10 @@ function computeRouteSequence() {
   const fids = [...selectedSegments.keys()];
   if (fids.length <= 1) return fids;
 
-  // Paint-order lookup — lower index means painted earlier.
-  const paintIdx = new Map();
-  strokeOrderedSegmentIds.forEach((fid, i) => paintIdx.set(fid, i));
-  const paintOrder = (a, b) => (paintIdx.get(a) ?? 1e9) - (paintIdx.get(b) ?? 1e9);
+  // Selection-order lookup; earlier route stops are the ordering anchor.
+  const selectionIdx = new Map();
+  routeOrderedFeatureIds.forEach((fid, i) => selectionIdx.set(fid, i));
+  const selectionOrder = (a, b) => (selectionIdx.get(a) ?? 1e9) - (selectionIdx.get(b) ?? 1e9);
 
   // STEP 1 — Adjacency --------------------------------------------------------
   const adj = new Map();
@@ -1759,12 +1841,12 @@ function computeRouteSequence() {
     }
   }
 
-  // STEP 2 — Connected components in paint order ------------------------------
+  // STEP 2 — Connected components in selection order ------------------------------
   const visited = new Set();
   const components = [];
-  const sortedByPaint = [...fids].sort(paintOrder);
+  const sortedBySelection = [...fids].sort(selectionOrder);
 
-  for (const seed of sortedByPaint) {
+  for (const seed of sortedBySelection) {
     if (visited.has(seed)) continue;
     const comp = [];
     const q = [seed];
@@ -1785,21 +1867,21 @@ function computeRouteSequence() {
   for (const comp of components) {
     if (comp.length === 1) { result.push(comp[0]); continue; }
 
-    // The first-painted segment anchors the counting direction.
-    const firstPainted = comp.reduce((a, b) => paintOrder(a, b) < 0 ? a : b);
+    // The first-selected segment anchors the counting direction.
+    const firstSelected = comp.reduce((a, b) => selectionOrder(a, b) < 0 ? a : b);
 
     // Route endpoints are degree-1 nodes (dead ends of a linear path).
     const endNodes = comp.filter(fid => adj.get(fid).size === 1);
 
-    // BFS from firstPainted to find the nearest route endpoint.
-    // Choosing the closest endpoint rather than the lowest-paint-order one
+    // BFS from firstSelected to find the nearest route endpoint.
+    // Choosing the closest endpoint rather than the lowest-selection-order one
     // ensures we start from the same "side" the user began drawing, regardless
     // of how many segments were added later in the opposite direction.
-    let start = firstPainted; // fallback for loops / all-branch graphs
+    let start = firstSelected; // fallback for loops / all-branch graphs
     if (endNodes.length > 0) {
       const endSet  = new Set(endNodes);
-      const bfsQ    = [firstPainted];
-      const bfsSeen = new Set([firstPainted]);
+      const bfsQ    = [firstSelected];
+      const bfsSeen = new Set([firstSelected]);
       bfsLoop: while (bfsQ.length) {
         const cur = bfsQ.shift();
         if (endSet.has(cur)) { start = cur; break bfsLoop; }
@@ -1810,7 +1892,7 @@ function computeRouteSequence() {
     }
 
     // Greedy neighbor-to-neighbor walk from start.
-    // Tiebreak on paint order so the walk follows the original drawing direction.
+    // Tiebreak on selection order so the walk follows the original drawing direction.
     const seen = new Set();
     const path = [];
     let cur = start;
@@ -1819,11 +1901,11 @@ function computeRouteSequence() {
       path.push(cur);
       seen.add(cur);
       const nexts = [...adj.get(cur)].filter(n => !seen.has(n));
-      cur = nexts.length ? nexts.reduce((a, b) => paintOrder(a, b) < 0 ? a : b) : null;
+      cur = nexts.length ? nexts.reduce((a, b) => selectionOrder(a, b) < 0 ? a : b) : null;
     }
 
     // Append segments the walk couldn't reach (branches / missing endpoint data).
-    comp.filter(fid => !seen.has(fid)).sort(paintOrder).forEach(fid => path.push(fid));
+    comp.filter(fid => !seen.has(fid)).sort(selectionOrder).forEach(fid => path.push(fid));
 
     result.push(...path);
   }
@@ -2137,9 +2219,7 @@ function validateSummary() {
 
 /* ── Open / close ── */
 function openSurveyPanel() {
-  if (unpaintMode) toggleUnpaintMode();
-  if (paintMode) togglePaintMode();
-  if (strokeOrderedSegmentIds.length === 0) return;
+  if (routeOrderedFeatureIds.length === 0) return;
 
   surveySegments  = buildContiguousSegments();
   surveyCur       = 0;
@@ -2200,7 +2280,7 @@ async function submitSurvey() {
   if (!validateSummary()) return;
 
   const payload = {
-    segment_ids: segmentIdsFor(strokeOrderedSegmentIds),
+    segment_ids: segmentIdsFor(routeOrderedFeatureIds),
     contiguous_segments: surveySegments.map((seg, i) => ({
       sequence_index: i,
       route_name: seg.route_name,
