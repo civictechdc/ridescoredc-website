@@ -228,11 +228,12 @@ A survey comment appears in the main map's rider hazard popup only if the respon
 ticked "Show my comment anonymously on the public map" **and** someone has approved it.
 Until then it is stored and shown nowhere.
 
-Review them at **http://localhost:8000/admin/**. The page asks for the `ADMIN_TOKEN` set in
-`api/.env`; with it unset, review is switched off. After adding or changing it, recreate the
-API container so it reads the new value: `docker compose up -d fastapi`. The page needs your
-own stack: under `npm run dev` its requests go to the shared server, whose token you will
-not have.
+Review them at **http://localhost:8000/admin/**, signing in with `ADMIN_USERNAME` and
+`ADMIN_PASSWORD` from `api/.env` (`admin` / `password` if you copied `api/.env.example`).
+With no password set, review is switched off. After changing either, recreate the API
+container so it reads the new values: `docker compose up -d fastapi`. The page needs your
+own stack: under `npm run dev` its requests go to the shared server, whose login is
+different.
 
 The same can be done in SQL:
 

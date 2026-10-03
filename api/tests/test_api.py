@@ -196,33 +196,40 @@ def test_reviews_for_an_unrated_street():
 
 # ── /api/admin/comments ──────────────────────────────────────────────────────
 
-TOKEN = "test-admin-token"
+LOGIN = ("admin", "password")
 
 
-def _admin(method, path, conn=None, token=TOKEN, **kwargs):
+@pytest.fixture
+def admin_login(monkeypatch):
+    monkeypatch.setenv("ADMIN_USERNAME", LOGIN[0])
+    monkeypatch.setenv("ADMIN_PASSWORD", LOGIN[1])
+
+
+def _admin(method, path, conn=None, login=LOGIN, **kwargs):
     conn = conn or make_mock_conn()
-    headers = {"X-Admin-Token": token} if token else {}
     with patch("main.init_db"), patch("main.get_conn", return_value=conn):
         from main import app
         with TestClient(app) as c:
-            return c.request(method, path, headers=headers, **kwargs)
+            return c.request(method, path, auth=login, **kwargs)
 
 
-def test_admin_is_off_without_a_configured_token(monkeypatch):
-    monkeypatch.delenv("ADMIN_TOKEN", raising=False)
+def test_admin_is_off_without_a_configured_password(monkeypatch):
+    monkeypatch.delenv("ADMIN_PASSWORD", raising=False)
     assert _admin("GET", "/api/admin/comments").status_code == 503
 
 
-def test_admin_refuses_a_wrong_or_missing_token(monkeypatch):
-    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
-    assert _admin("GET", "/api/admin/comments", token="guess").status_code == 401
-    assert _admin("GET", "/api/admin/comments", token=None).status_code == 401
+def test_admin_refuses_a_wrong_or_missing_login(admin_login):
+    assert _admin("GET", "/api/admin/comments", login=("admin", "guess")).status_code == 401
+    assert _admin("GET", "/api/admin/comments", login=("someone", "password")).status_code == 401
+    response = _admin("GET", "/api/admin/comments", login=None)
+    assert response.status_code == 401
+    # No WWW-Authenticate, or the browser opens its own login box over the page's.
+    assert "www-authenticate" not in response.headers
 
 
-def test_admin_lists_comments_for_review(monkeypatch):
+def test_admin_lists_comments_for_review(admin_login):
     from datetime import datetime, timezone
 
-    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
     conn = make_mock_conn()
     cur = conn.cursor.return_value
     cur.fetchall.side_effect = [
@@ -241,8 +248,7 @@ def test_admin_lists_comments_for_review(monkeypatch):
     assert "s.comment_public" in listing_sql
 
 
-def test_admin_approves_a_comment(monkeypatch):
-    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
+def test_admin_approves_a_comment(admin_login):
     conn = make_mock_conn()
     sid = "0b6c4f3e-0000-4000-8000-000000000001"
     conn.cursor.return_value.fetchone.return_value = (sid,)
@@ -253,8 +259,7 @@ def test_admin_approves_a_comment(monkeypatch):
     assert params == ("approved", sid)
 
 
-def test_admin_cannot_approve_an_unknown_or_private_comment(monkeypatch):
-    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
+def test_admin_cannot_approve_an_unknown_or_private_comment(admin_login):
     conn = make_mock_conn()
     conn.cursor.return_value.fetchone.return_value = None
     response = _admin("POST", "/api/admin/comments/0b6c4f3e-0000-4000-8000-000000000001",
@@ -262,8 +267,7 @@ def test_admin_cannot_approve_an_unknown_or_private_comment(monkeypatch):
     assert response.status_code == 404
 
 
-def test_admin_rejects_an_unknown_status(monkeypatch):
-    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
+def test_admin_rejects_an_unknown_status(admin_login):
     response = _admin("POST", "/api/admin/comments/0b6c4f3e-0000-4000-8000-000000000001",
                       json={"status": "published"})
     assert response.status_code == 422

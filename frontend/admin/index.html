@@ -4,7 +4,7 @@
 <title>Comment Review</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Not for search engines. The page is harmless without the token, but there
+<!-- Not for search engines. The page is harmless without the login, but there
      is no reason for it to be found. -->
 <meta name="robots" content="noindex, nofollow">
 <style>
@@ -44,6 +44,7 @@
   }
   #signin h2 { margin: 0 0 6px; font-size: 16px; color: #1a1a2e; }
   #signin p { margin: 0 0 14px; font-size: 12px; line-height: 1.5; color: #64748b; }
+  #signin label { display: block; margin: 10px 0 4px; font-size: 12px; font-weight: 500; color: #334155; }
   #signin input {
     width: 100%; padding: 9px 10px; border: 1px solid #d1d5db; border-radius: 6px;
     font: 13px 'Inter', sans-serif; outline: none;
@@ -123,11 +124,14 @@
 
 <main class="wrap">
 
-  <!-- Shown until a token is accepted. -->
+  <!-- Shown until a login is accepted. -->
   <form id="signin" hidden>
     <h2>Sign in to review comments</h2>
-    <p>Enter the admin token. It is kept in this browser tab only and forgotten when the tab closes.</p>
-    <input id="token" type="password" autocomplete="off" placeholder="Admin token" required>
+    <p>You stay signed in until you sign out or close this tab.</p>
+    <label for="username">Username</label>
+    <input id="username" type="text" autocomplete="username" required>
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" required>
     <button type="submit">Sign in</button>
     <div class="error" id="signin-error"></div>
   </form>
@@ -151,13 +155,13 @@
 <div id="toast" role="status"></div>
 
 <script>
-/* The token lives in sessionStorage: it survives a reload but not closing the
-   tab, and is never written anywhere the next person at this computer would
-   find it. Storage can be unavailable (private windows, blocked site data), in
-   which case the token is simply asked for again. */
-const TOKEN_KEY = 'ridescore-admin-token';
-let token = null;
-try { token = sessionStorage.getItem(TOKEN_KEY); } catch (err) {}
+/* The login is sent with every request as HTTP Basic credentials, and kept in
+   sessionStorage meanwhile: it survives a reload but not closing the tab.
+   Storage can be unavailable (private windows, blocked site data), in which
+   case the login is simply asked for again. */
+const LOGIN_KEY = 'ridescore-admin-login';
+let login = null;
+try { login = sessionStorage.getItem(LOGIN_KEY); } catch (err) {}
 
 let status = 'pending';
 
@@ -184,29 +188,29 @@ function toast(message) {
   toast.timer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-function saveToken(value) {
-  token = value;
-  try { value ? sessionStorage.setItem(TOKEN_KEY, value) : sessionStorage.removeItem(TOKEN_KEY); } catch (err) {}
+function saveLogin(value) {
+  login = value;
+  try { value ? sessionStorage.setItem(LOGIN_KEY, value) : sessionStorage.removeItem(LOGIN_KEY); } catch (err) {}
 }
 
 function showSignin(message = '') {
-  saveToken(null);
+  saveLogin(null);
   $('review').hidden = true;
   $('signout').hidden = true;
   $('signin').hidden = false;
   $('signin-error').textContent = message;
-  $('token').value = '';
-  $('token').focus();
+  $('password').value = '';
+  ($('username').value ? $('password') : $('username')).focus();
 }
 
 async function api(path, options = {}) {
   const res = await fetch(path, {
     ...options,
-    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token, ...(options.headers || {}) },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${login}`, ...(options.headers || {}) },
   });
-  if (res.status === 401) { showSignin('That token was not accepted.'); throw new Error('unauthorised'); }
+  if (res.status === 401) { showSignin('That username and password are not right.'); throw new Error('unauthorised'); }
   if (res.status === 503) {
-    showSignin('Comment review is turned off on this server: ADMIN_TOKEN is not set.');
+    showSignin('Comment review is turned off on this server: ADMIN_PASSWORD is not set.');
     throw new Error('disabled');
   }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -269,7 +273,10 @@ async function decide(card, to) {
 
 $('signin').addEventListener('submit', (e) => {
   e.preventDefault();
-  saveToken($('token').value.trim());
+  // Basic credentials are base64 of "username:password", as UTF-8 so a
+  // password with accents or symbols survives the encoding.
+  const pair = `${$('username').value.trim()}:${$('password').value}`;
+  saveLogin(btoa(String.fromCharCode(...new TextEncoder().encode(pair))));
   load();
 });
 $('signout').addEventListener('click', () => showSignin());
@@ -282,7 +289,7 @@ $('list').addEventListener('click', (e) => {
   if (button) decide(button.closest('.card'), button.dataset.to);
 });
 
-if (token) load(); else showSignin();
+if (login) load(); else showSignin();
 </script>
 </body>
 </html>

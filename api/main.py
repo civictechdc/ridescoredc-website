@@ -6,7 +6,8 @@ from contextlib import asynccontextmanager
 from typing import List, Literal, Optional
 
 import psycopg
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -269,27 +270,38 @@ def segment_reviews(segment_id: str):
 
 # ── Comment review ──────────────────────────────────────────────────────────
 #
-# Used by the page at /admin/. Every request carries the reviewer's token in an
-# X-Admin-Token header, compared against ADMIN_TOKEN from the environment.
+# Used by the page at /admin/. Every request carries the reviewer's username and
+# password as HTTP Basic credentials, checked against ADMIN_USERNAME and
+# ADMIN_PASSWORD from the environment.
 #
-# With ADMIN_TOKEN unset, review is switched off entirely rather than left
+# With ADMIN_PASSWORD unset, review is switched off entirely rather than left
 # open, so a server nobody has configured publishes nothing and lets nobody in.
-# One shared token is enough for a handful of reviewers; it is not accounts,
+# One shared login is enough for a handful of reviewers; it is not accounts,
 # and should be replaced by real sign-in before more people need access.
 
 CommentStatus = Literal["pending", "approved", "rejected"]
 
+# auto_error off, so a failed login is answered by require_admin without the
+# WWW-Authenticate header that would make the browser open its own login box
+# over the page's.
+basic_auth = HTTPBasic(auto_error=False)
 
-def require_admin(x_admin_token: Optional[str] = Header(default=None)):
-    expected = os.environ.get("ADMIN_TOKEN", "")
-    if not expected:
+
+def require_admin(credentials: Optional[HTTPBasicCredentials] = Depends(basic_auth)):
+    username = os.environ.get("ADMIN_USERNAME", "admin")
+    password = os.environ.get("ADMIN_PASSWORD", "")
+    if not password:
         raise HTTPException(
             status_code=503,
-            detail="Comment review is turned off: ADMIN_TOKEN is not set on the server.",
+            detail="Comment review is turned off: ADMIN_PASSWORD is not set on the server.",
         )
-    # compare_digest, so the time taken does not reveal how much of a guess matched.
-    if not x_admin_token or not hmac.compare_digest(x_admin_token.encode(), expected.encode()):
-        raise HTTPException(status_code=401, detail="That admin token is not right.")
+    # compare_digest, so the time taken does not reveal how much of a guess
+    # matched. Both are always compared, so neither can be found on its own.
+    ok = credentials is not None
+    ok &= hmac.compare_digest((credentials.username if credentials else "").encode(), username.encode())
+    ok &= hmac.compare_digest((credentials.password if credentials else "").encode(), password.encode())
+    if not ok:
+        raise HTTPException(status_code=401, detail="That username and password are not right.")
 
 
 class CommentDecision(BaseModel):
