@@ -103,3 +103,171 @@ def test_submission_db_error():
         with TestClient(app) as c:
             response = c.post("/api/submissions", json=VALID_PAYLOAD)
     assert response.status_code == 500
+
+
+def _stored_submission(payload):
+    conn = make_mock_conn()
+    with patch("main.init_db"), patch("main.get_conn", return_value=conn):
+        from main import app
+        with TestClient(app) as c:
+            assert c.post("/api/submissions", json=payload).status_code == 201
+    written = [call.args for call in conn.cursor.return_value.execute.call_args_list]
+    return next(a for a in written if "app.survey_submissions" in a[0])[1]
+
+
+def test_comment_is_private_unless_asked():
+    """A response that does not tick the box never publishes its comment."""
+    assert _stored_submission(VALID_PAYLOAD)[8] is False
+
+
+def test_comment_public_when_asked():
+    assert _stored_submission({**VALID_PAYLOAD, "comment_public": True})[8] is True
+
+
+def test_comment_public_without_a_comment_publishes_nothing():
+    payload = {**VALID_PAYLOAD, "comments": None, "comment_public": True}
+    assert _stored_submission(payload)[8] is False
+
+
+# ── /api/segments/{segment_id}/reviews ───────────────────────────────────────
+
+def _reviews(fetchone, fetchall):
+    conn = make_mock_conn()
+    cur = conn.cursor.return_value
+    # First fetchone is data.load_record (which road network is loaded).
+    cur.fetchone.side_effect = [("ridescoredc-data-preview@0.1",), fetchone]
+    cur.fetchall.side_effect = fetchall
+    with patch("main.init_db"), patch("main.get_conn", return_value=conn):
+        from main import app
+        with TestClient(app) as c:
+            response = c.get("/api/segments/abc123/reviews")
+    return response, [call.args for call in cur.execute.call_args_list]
+
+
+def test_reviews_summarises_a_street():
+    from datetime import date
+    from decimal import Decimal
+
+    response, executed = _reviews(
+        (4, Decimal("3.25"), Decimal("3.0"), Decimal("2.5"), 1, 1, 2, "Evening"),
+        [
+            [("Motor traffic speed", 3), ("Little separation from traffic", 2)],
+            [("Scary at rush hour", date(2026, 10, 3), "Evening")],
+        ],
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "n_reviews": 4,
+        "street": {
+            "mean_safety": 3.2,
+            "mean_lts": 3.0,
+            "top_stress_factors": [
+                {"factor": "Motor traffic speed", "count": 3},
+                {"factor": "Little separation from traffic", "count": 2},
+            ],
+        },
+        "routes": {
+            "mean_satisfaction": 2.5,
+            "ride_again": {"yes": 1, "probably": 1, "no": 2},
+            "common_time": "Evening",
+        },
+        "comments": [{"text": "Scary at rush hour", "date": "2026-10-03", "time_of_day": "Evening"}],
+    }
+    # Every query is limited to this street on the loaded road network.
+    for sql, params in executed[1:]:
+        assert params[:2] == ("abc123", "ridescoredc-data-preview@0.1")
+
+
+def test_reviews_only_return_published_and_approved_comments():
+    _, executed = _reviews((0, None, None, None, 0, 0, 0, None), [[], []])
+    comment_sql = executed[-1][0]
+    assert "s.comment_public" in comment_sql
+    assert "s.comment_status = 'approved'" in comment_sql
+
+
+def test_reviews_for_an_unrated_street():
+    response, _ = _reviews((0, None, None, None, 0, 0, 0, None), [[], []])
+    assert response.status_code == 200
+    body = response.json()
+    assert body["n_reviews"] == 0
+    assert body["street"]["mean_safety"] is None
+    assert body["comments"] == []
+
+
+# ── /api/admin/comments ──────────────────────────────────────────────────────
+
+LOGIN = ("admin", "password")
+
+
+@pytest.fixture
+def admin_login(monkeypatch):
+    monkeypatch.setenv("ADMIN_USERNAME", LOGIN[0])
+    monkeypatch.setenv("ADMIN_PASSWORD", LOGIN[1])
+
+
+def _admin(method, path, conn=None, login=LOGIN, **kwargs):
+    conn = conn or make_mock_conn()
+    with patch("main.init_db"), patch("main.get_conn", return_value=conn):
+        from main import app
+        with TestClient(app) as c:
+            return c.request(method, path, auth=login, **kwargs)
+
+
+def test_admin_is_off_without_a_configured_password(monkeypatch):
+    monkeypatch.delenv("ADMIN_PASSWORD", raising=False)
+    assert _admin("GET", "/api/admin/comments").status_code == 503
+
+
+def test_admin_refuses_a_wrong_or_missing_login(admin_login):
+    assert _admin("GET", "/api/admin/comments", login=("admin", "guess")).status_code == 401
+    assert _admin("GET", "/api/admin/comments", login=("someone", "password")).status_code == 401
+    response = _admin("GET", "/api/admin/comments", login=None)
+    assert response.status_code == 401
+    # No WWW-Authenticate, or the browser opens its own login box over the page's.
+    assert "www-authenticate" not in response.headers
+
+
+def test_admin_lists_comments_for_review(admin_login):
+    from datetime import datetime, timezone
+
+    conn = make_mock_conn()
+    cur = conn.cursor.return_value
+    cur.fetchall.side_effect = [
+        [("pending", 2), ("approved", 1)],
+        [("0b6c4f3e-0000-4000-8000-000000000001", datetime(2026, 10, 3, tzinfo=timezone.utc),
+          "Trucks in the lane", "Evening", 2, ["U ST NW", "VERMONT AVE NW"])],
+    ]
+    response = _admin("GET", "/api/admin/comments?status=pending", conn=conn)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["counts"] == {"pending": 2, "approved": 1, "rejected": 0}
+    assert body["comments"][0]["text"] == "Trucks in the lane"
+    assert body["comments"][0]["streets"] == ["U ST NW", "VERMONT AVE NW"]
+    # Only comments their authors asked to publish are ever listed.
+    listing_sql = cur.execute.call_args_list[1].args[0]
+    assert "s.comment_public" in listing_sql
+
+
+def test_admin_approves_a_comment(admin_login):
+    conn = make_mock_conn()
+    sid = "0b6c4f3e-0000-4000-8000-000000000001"
+    conn.cursor.return_value.fetchone.return_value = (sid,)
+    response = _admin("POST", f"/api/admin/comments/{sid}", conn=conn, json={"status": "approved"})
+    assert response.status_code == 200
+    sql, params = conn.cursor.return_value.execute.call_args.args
+    assert "comment_public" in sql
+    assert params == ("approved", sid)
+
+
+def test_admin_cannot_approve_an_unknown_or_private_comment(admin_login):
+    conn = make_mock_conn()
+    conn.cursor.return_value.fetchone.return_value = None
+    response = _admin("POST", "/api/admin/comments/0b6c4f3e-0000-4000-8000-000000000001",
+                      conn=conn, json={"status": "approved"})
+    assert response.status_code == 404
+
+
+def test_admin_rejects_an_unknown_status(admin_login):
+    response = _admin("POST", "/api/admin/comments/0b6c4f3e-0000-4000-8000-000000000001",
+                      json={"status": "published"})
+    assert response.status_code == 422

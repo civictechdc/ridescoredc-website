@@ -148,9 +148,13 @@ npm run setup
 
 This command does two things, which could be run separately if needed:
 
+**`npm run migrate`** creates the survey tables.
+
 **`npm run data`** downloads the latest published road data and loads it into the database. A **package** holds the roads, crashes and scores; a **bundle** holds the SQL deciding what is visible on a map.
 
-**`npm run migrate`** creates the survey tables.
+Migrations go first because part of what the bundle publishes, the rider hazard layer on
+the main map, reads the survey tables. Loaded the other way round, that layer is left out
+until the next `npm run data`.
 
 ---
 
@@ -217,6 +221,31 @@ Running it twice does nothing, because yoyo records what it has already applied 
 
 **Never edit a migration that has been applied anywhere** — write a new one. The record
 says a migration ran; it cannot know the file changed afterwards.
+
+### Approving survey comments
+
+A survey comment appears in the main map's rider hazard popup only if the respondent
+ticked "Show my comment anonymously on the public map" **and** someone has approved it.
+Until then it is stored and shown nowhere.
+
+Review them at **http://localhost:8000/admin/**, signing in with `ADMIN_USERNAME` and
+`ADMIN_PASSWORD` from `api/.env` (`admin` / `password` if you copied `api/.env.example`).
+With no password set, review is switched off. After changing either, recreate the API
+container so it reads the new values: `docker compose up -d fastapi`. The page needs your
+own stack: under `npm run dev` its requests go to the shared server, whose login is
+different.
+
+The same can be done in SQL:
+
+```sql
+SELECT * FROM app.comments_awaiting_review;
+
+UPDATE app.survey_submissions SET comment_status = 'approved' WHERE submission_id = '<id>';
+UPDATE app.survey_submissions SET comment_status = 'rejected' WHERE submission_id = '<id>';
+```
+
+Approve nothing that names or describes a person, or that you would not put on the
+map yourself. A rejected comment stays stored as part of the response.
 
 ## Step 5 — Check it works
 

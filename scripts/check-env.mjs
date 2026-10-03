@@ -44,6 +44,14 @@ const SETTINGS = {
     home: 'api/.env',
     used_by: 'the database container',
   },
+  ADMIN_USERNAME: {
+    home: 'api/.env',
+    used_by: 'the API, as the login name for the comment review page at /admin/',
+  },
+  ADMIN_PASSWORD: {
+    home: 'api/.env',
+    used_by: 'the API, as the password for the comment review page at /admin/',
+  },
   // Overrides for where published road data comes from. The defaults are in
   // scripts/data_source.py; these are for pointing one machine somewhere else,
   // usually at data you built yourself.
@@ -171,7 +179,7 @@ export function reportEnv(dir = process.cwd(), { quiet = false } = {}) {
     if (rows.length) {
       console.log('\n  settings in effect');
       for (const [k, v] of rows) {
-        console.log(`    ${k.padEnd(18)} ${k === 'DATABASE_URL' || k === 'POSTGRES_PASSWORD' ? '(set)' : v}`);
+        console.log(`    ${k.padEnd(18)} ${['DATABASE_URL', 'POSTGRES_PASSWORD', 'ADMIN_PASSWORD'].includes(k) ? '(set)' : v}`);
       }
       console.log('');
     }
