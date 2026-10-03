@@ -226,7 +226,15 @@ says a migration ran; it cannot know the file changed afterwards.
 
 A survey comment appears in the main map's rider hazard popup only if the respondent
 ticked "Show my comment anonymously on the public map" **and** someone has approved it.
-Until then it is stored and shown nowhere. To review what is waiting:
+Until then it is stored and shown nowhere.
+
+Review them at **http://localhost:8000/admin/**. The page asks for the `ADMIN_TOKEN` set in
+`api/.env`; with it unset, review is switched off. After adding or changing it, recreate the
+API container so it reads the new value: `docker compose up -d fastapi`. The page needs your
+own stack: under `npm run dev` its requests go to the shared server, whose token you will
+not have.
+
+The same can be done in SQL:
 
 ```sql
 SELECT * FROM app.comments_awaiting_review;

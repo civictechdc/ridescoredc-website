@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Comment Review</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Not for search engines. The page is harmless without the token, but there
+     is no reason for it to be found. -->
+<meta name="robots" content="noindex, nofollow">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #f8fafc; color: #334155;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #1a1a2e; color: #fff;
+    padding: 14px 16px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header h1 { margin: 0; font-size: 15px; font-weight: 600; }
+  header a, header button {
+    background: none; border: 1px solid rgba(255,255,255,.3); color: #fff;
+    border-radius: 6px; padding: 6px 10px; font: 500 12px 'Inter', sans-serif;
+    cursor: pointer; text-decoration: none;
+  }
+  header a:hover, header button:hover { background: rgba(255,255,255,.08); }
+  header .actions { display: flex; gap: 8px; }
+
+  main { padding: 20px 16px 40px; }
+  .intro { font-size: 13px; line-height: 1.5; margin: 0 0 16px; color: #64748b; }
+
+  /* ── Sign in ── */
+  #signin {
+    max-width: 380px; margin: 40px auto; background: #fff;
+    border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,.08);
+    padding: 22px;
+  }
+  #signin h2 { margin: 0 0 6px; font-size: 16px; color: #1a1a2e; }
+  #signin p { margin: 0 0 14px; font-size: 12px; line-height: 1.5; color: #64748b; }
+  #signin input {
+    width: 100%; padding: 9px 10px; border: 1px solid #d1d5db; border-radius: 6px;
+    font: 13px 'Inter', sans-serif; outline: none;
+  }
+  #signin input:focus { border-color: #93c5fd; }
+  #signin button {
+    margin-top: 10px; width: 100%; padding: 10px; border: none; border-radius: 6px;
+    background: #1a1a2e; color: #fff; font: 600 13px 'Inter', sans-serif; cursor: pointer;
+  }
+  #signin button:hover { background: #2d2d4e; }
+  .error { color: #b91c1c; font-size: 12px; margin-top: 8px; min-height: 16px; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid #d1d5db; background: #fff; color: #334155;
+    border-radius: 999px; padding: 7px 14px; font: 500 12px 'Inter', sans-serif; cursor: pointer;
+  }
+  .tab:hover { border-color: #94a3b8; }
+  .tab.selected { background: #1a1a2e; border-color: #1a1a2e; color: #fff; }
+  .tab .n {
+    display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px;
+    border-radius: 999px; background: #e2e8f0; color: #334155; font-size: 11px; text-align: center;
+  }
+  .tab.selected .n { background: rgba(255,255,255,.2); color: #fff; }
+
+  /* ── Comment cards ── */
+  .card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 10px;
+    transition: opacity .2s, transform .2s;
+  }
+  .card.leaving { opacity: 0; transform: translateX(12px); }
+  .card .text {
+    margin: 0; font-size: 14px; line-height: 1.5; color: #1a1a2e;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .card .meta { margin-top: 8px; font-size: 11px; color: #64748b; line-height: 1.6; }
+  .card .meta strong { color: #334155; font-weight: 500; }
+  .card .buttons { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .card button {
+    border-radius: 6px; padding: 7px 14px; font: 600 12px 'Inter', sans-serif; cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .card button:disabled { opacity: .5; cursor: default; }
+  .approve { background: #166534; color: #fff; }
+  .approve:hover:not(:disabled) { background: #14532d; }
+  .reject { background: #fff; color: #b91c1c; border-color: #fca5a5 !important; }
+  .reject:hover:not(:disabled) { background: #fef2f2; }
+  .back { background: #fff; color: #334155; border-color: #d1d5db !important; }
+  .back:hover:not(:disabled) { background: #f8fafc; }
+
+  .empty {
+    text-align: center; padding: 40px 16px; color: #94a3b8; font-size: 13px;
+    background: #fff; border: 1px dashed #e2e8f0; border-radius: 10px;
+  }
+  #toast {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+    background: #1a1a2e; color: #fff; padding: 9px 14px; border-radius: 8px;
+    font-size: 12px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Comment review</h1>
+    <div class="actions">
+      <a href="/">Main map</a>
+      <button id="signout" type="button" hidden>Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- Shown until a token is accepted. -->
+  <form id="signin" hidden>
+    <h2>Sign in to review comments</h2>
+    <p>Enter the admin token. It is kept in this browser tab only and forgotten when the tab closes.</p>
+    <input id="token" type="password" autocomplete="off" placeholder="Admin token" required>
+    <button type="submit">Sign in</button>
+    <div class="error" id="signin-error"></div>
+  </form>
+
+  <section id="review" hidden>
+    <p class="intro">
+      These are comments riders asked to show anonymously on the main map. Approved comments
+      appear in the popup for every street on that rider's route. Approve nothing that names or
+      describes a person, or that you would not put on the map yourself.
+    </p>
+    <div class="tabs" role="tablist">
+      <button class="tab" data-status="pending" type="button">Waiting <span class="n">0</span></button>
+      <button class="tab" data-status="approved" type="button">Approved <span class="n">0</span></button>
+      <button class="tab" data-status="rejected" type="button">Rejected <span class="n">0</span></button>
+    </div>
+    <div id="list"></div>
+  </section>
+
+</main>
+
+<div id="toast" role="status"></div>
+
+<script>
+/* The token lives in sessionStorage: it survives a reload but not closing the
+   tab, and is never written anywhere the next person at this computer would
+   find it. Storage can be unavailable (private windows, blocked site data), in
+   which case the token is simply asked for again. */
+const TOKEN_KEY = 'ridescore-admin-token';
+let token = null;
+try { token = sessionStorage.getItem(TOKEN_KEY); } catch (err) {}
+
+let status = 'pending';
+
+// What each tab offers: the decisions that move a comment out of it.
+const ACTIONS = {
+  pending:  [['approved', 'Approve', 'approve'], ['rejected', 'Reject', 'reject']],
+  approved: [['rejected', 'Remove from map', 'reject'], ['pending', 'Back to waiting', 'back']],
+  rejected: [['approved', 'Approve', 'approve'], ['pending', 'Back to waiting', 'back']],
+};
+const DONE = { approved: 'Approved — it will show on the map', rejected: 'Rejected', pending: 'Moved back to waiting' };
+
+const $ = (id) => document.getElementById(id);
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+function toast(message) {
+  const t = $('toast');
+  t.textContent = message;
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function saveToken(value) {
+  token = value;
+  try { value ? sessionStorage.setItem(TOKEN_KEY, value) : sessionStorage.removeItem(TOKEN_KEY); } catch (err) {}
+}
+
+function showSignin(message = '') {
+  saveToken(null);
+  $('review').hidden = true;
+  $('signout').hidden = true;
+  $('signin').hidden = false;
+  $('signin-error').textContent = message;
+  $('token').value = '';
+  $('token').focus();
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token, ...(options.headers || {}) },
+  });
+  if (res.status === 401) { showSignin('That token was not accepted.'); throw new Error('unauthorised'); }
+  if (res.status === 503) {
+    showSignin('Comment review is turned off on this server: ADMIN_TOKEN is not set.');
+    throw new Error('disabled');
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+function renderCounts(counts) {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.toggle('selected', tab.dataset.status === status);
+    tab.querySelector('.n').textContent = counts[tab.dataset.status] ?? 0;
+  });
+}
+
+function cardHTML(c) {
+  const when = new Date(c.submitted_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  const streets = c.streets.length ? c.streets.map(esc).join(', ') : 'No street names recorded';
+  const buttons = ACTIONS[status].map(([to, label, cls]) =>
+    `<button class="${cls}" type="button" data-to="${to}">${label}</button>`).join('');
+  return `
+    <article class="card" data-id="${esc(c.submission_id)}">
+      <p class="text">${esc(c.text)}</p>
+      <div class="meta">
+        <strong>Submitted</strong> ${esc(when)}${c.time_of_day ? ` · rode in the ${esc(c.time_of_day.toLowerCase())}` : ''}
+        ${c.overall_satisfaction ? ` · satisfaction ${c.overall_satisfaction}/5` : ''}<br>
+        <strong>Route</strong> ${streets}
+      </div>
+      <div class="buttons">${buttons}</div>
+    </article>`;
+}
+
+async function load() {
+  $('signin').hidden = true;
+  $('review').hidden = false;
+  $('signout').hidden = false;
+  try {
+    const data = await api(`/api/admin/comments?status=${status}`);
+    renderCounts(data.counts);
+    $('list').innerHTML = data.comments.length
+      ? data.comments.map(cardHTML).join('')
+      : `<div class="empty">${status === 'pending' ? 'Nothing waiting. All caught up.' : `No ${status} comments.`}</div>`;
+  } catch (err) {
+    if (err.message !== 'unauthorised' && err.message !== 'disabled') {
+      $('list').innerHTML = '<div class="empty">Comments could not be loaded. Is the API running?</div>';
+    }
+  }
+}
+
+async function decide(card, to) {
+  card.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  try {
+    await api(`/api/admin/comments/${card.dataset.id}`, { method: 'POST', body: JSON.stringify({ status: to }) });
+    toast(DONE[to]);
+    card.classList.add('leaving');
+    setTimeout(load, 200);
+  } catch (err) {
+    card.querySelectorAll('button').forEach(b => { b.disabled = false; });
+    if (err.message !== 'unauthorised' && err.message !== 'disabled') toast('That did not save. Try again.');
+  }
+}
+
+$('signin').addEventListener('submit', (e) => {
+  e.preventDefault();
+  saveToken($('token').value.trim());
+  load();
+});
+$('signout').addEventListener('click', () => showSignin());
+document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+  status = tab.dataset.status;
+  load();
+}));
+$('list').addEventListener('click', (e) => {
+  const button = e.target.closest('button[data-to]');
+  if (button) decide(button.closest('.card'), button.dataset.to);
+});
+
+if (token) load(); else showSignin();
+</script>
+</body>
+</html>

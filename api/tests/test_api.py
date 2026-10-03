@@ -192,3 +192,78 @@ def test_reviews_for_an_unrated_street():
     assert body["n_reviews"] == 0
     assert body["street"]["mean_safety"] is None
     assert body["comments"] == []
+
+
+# ── /api/admin/comments ──────────────────────────────────────────────────────
+
+TOKEN = "test-admin-token"
+
+
+def _admin(method, path, conn=None, token=TOKEN, **kwargs):
+    conn = conn or make_mock_conn()
+    headers = {"X-Admin-Token": token} if token else {}
+    with patch("main.init_db"), patch("main.get_conn", return_value=conn):
+        from main import app
+        with TestClient(app) as c:
+            return c.request(method, path, headers=headers, **kwargs)
+
+
+def test_admin_is_off_without_a_configured_token(monkeypatch):
+    monkeypatch.delenv("ADMIN_TOKEN", raising=False)
+    assert _admin("GET", "/api/admin/comments").status_code == 503
+
+
+def test_admin_refuses_a_wrong_or_missing_token(monkeypatch):
+    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
+    assert _admin("GET", "/api/admin/comments", token="guess").status_code == 401
+    assert _admin("GET", "/api/admin/comments", token=None).status_code == 401
+
+
+def test_admin_lists_comments_for_review(monkeypatch):
+    from datetime import datetime, timezone
+
+    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
+    conn = make_mock_conn()
+    cur = conn.cursor.return_value
+    cur.fetchall.side_effect = [
+        [("pending", 2), ("approved", 1)],
+        [("0b6c4f3e-0000-4000-8000-000000000001", datetime(2026, 10, 3, tzinfo=timezone.utc),
+          "Trucks in the lane", "Evening", 2, ["U ST NW", "VERMONT AVE NW"])],
+    ]
+    response = _admin("GET", "/api/admin/comments?status=pending", conn=conn)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["counts"] == {"pending": 2, "approved": 1, "rejected": 0}
+    assert body["comments"][0]["text"] == "Trucks in the lane"
+    assert body["comments"][0]["streets"] == ["U ST NW", "VERMONT AVE NW"]
+    # Only comments their authors asked to publish are ever listed.
+    listing_sql = cur.execute.call_args_list[1].args[0]
+    assert "s.comment_public" in listing_sql
+
+
+def test_admin_approves_a_comment(monkeypatch):
+    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
+    conn = make_mock_conn()
+    sid = "0b6c4f3e-0000-4000-8000-000000000001"
+    conn.cursor.return_value.fetchone.return_value = (sid,)
+    response = _admin("POST", f"/api/admin/comments/{sid}", conn=conn, json={"status": "approved"})
+    assert response.status_code == 200
+    sql, params = conn.cursor.return_value.execute.call_args.args
+    assert "comment_public" in sql
+    assert params == ("approved", sid)
+
+
+def test_admin_cannot_approve_an_unknown_or_private_comment(monkeypatch):
+    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
+    conn = make_mock_conn()
+    conn.cursor.return_value.fetchone.return_value = None
+    response = _admin("POST", "/api/admin/comments/0b6c4f3e-0000-4000-8000-000000000001",
+                      conn=conn, json={"status": "approved"})
+    assert response.status_code == 404
+
+
+def test_admin_rejects_an_unknown_status(monkeypatch):
+    monkeypatch.setenv("ADMIN_TOKEN", TOKEN)
+    response = _admin("POST", "/api/admin/comments/0b6c4f3e-0000-4000-8000-000000000001",
+                      json={"status": "published"})
+    assert response.status_code == 422

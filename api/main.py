@@ -1,20 +1,21 @@
+import hmac
 import os
 import time
 import uuid
 from contextlib import asynccontextmanager
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 import psycopg
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
-# This service answers three things: it records a survey response, it reports
-# what riders have said about one street, and it says whether it can reach the
-# database. It serves no pages -- nginx does that
-# directly -- and it does not serve the map, which the browser gets from Martin.
+# This service records survey responses, reports what riders have said about
+# one street, lets a reviewer approve comments for the map, and says whether it
+# can reach the database. It serves no pages -- nginx does that directly -- and
+# it does not serve the map, which the browser gets from Martin.
 
 
 def get_conn():
@@ -264,6 +265,121 @@ def segment_reviews(segment_id: str):
             for text, day, time_of_day in comments
         ],
     }
+
+
+# ── Comment review ──────────────────────────────────────────────────────────
+#
+# Used by the page at /admin/. Every request carries the reviewer's token in an
+# X-Admin-Token header, compared against ADMIN_TOKEN from the environment.
+#
+# With ADMIN_TOKEN unset, review is switched off entirely rather than left
+# open, so a server nobody has configured publishes nothing and lets nobody in.
+# One shared token is enough for a handful of reviewers; it is not accounts,
+# and should be replaced by real sign-in before more people need access.
+
+CommentStatus = Literal["pending", "approved", "rejected"]
+
+
+def require_admin(x_admin_token: Optional[str] = Header(default=None)):
+    expected = os.environ.get("ADMIN_TOKEN", "")
+    if not expected:
+        raise HTTPException(
+            status_code=503,
+            detail="Comment review is turned off: ADMIN_TOKEN is not set on the server.",
+        )
+    # compare_digest, so the time taken does not reveal how much of a guess matched.
+    if not x_admin_token or not hmac.compare_digest(x_admin_token.encode(), expected.encode()):
+        raise HTTPException(status_code=401, detail="That admin token is not right.")
+
+
+class CommentDecision(BaseModel):
+    status: CommentStatus
+
+
+@app.get("/api/admin/comments", dependencies=[Depends(require_admin)])
+def list_comments(status: CommentStatus = "pending"):
+    """Comments respondents asked to publish, with a status, for review.
+
+    Comments nobody asked to publish are never listed: there is nothing to
+    decide about them. Waiting comments come oldest first, so the queue is
+    worked in order; decided ones newest first.
+    """
+    order = "ASC" if status == "pending" else "DESC"
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT comment_status, count(*)
+                    FROM app.survey_submissions
+                    WHERE comments IS NOT NULL AND comment_public
+                    GROUP BY comment_status
+                    """
+                )
+                counts = dict(cur.fetchall())
+
+                # The streets on the route, so a reviewer can tell what the
+                # comment is about without opening the database.
+                cur.execute(
+                    f"""
+                    SELECT s.submission_id, s.submitted_at, s.comments, s.time_of_day,
+                           s.overall_satisfaction,
+                           array_remove(array_agg(DISTINCT c.route_name), NULL)
+                    FROM app.survey_submissions s
+                    LEFT JOIN app.survey_contiguous_segments c USING (submission_id)
+                    WHERE s.comments IS NOT NULL AND s.comment_public
+                      AND s.comment_status = %s
+                    GROUP BY s.submission_id
+                    ORDER BY s.submitted_at {order}
+                    LIMIT 200
+                    """,
+                    (status,),
+                )
+                rows = cur.fetchall()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    return {
+        "counts": {s: counts.get(s, 0) for s in ("pending", "approved", "rejected")},
+        "comments": [
+            {
+                "submission_id": str(sid),
+                "submitted_at": submitted_at.isoformat(),
+                "text": text,
+                "time_of_day": time_of_day,
+                "overall_satisfaction": satisfaction,
+                "streets": streets or [],
+            }
+            for sid, submitted_at, text, time_of_day, satisfaction, streets in rows
+        ],
+    }
+
+
+@app.post("/api/admin/comments/{submission_id}", dependencies=[Depends(require_admin)])
+def decide_comment(submission_id: uuid.UUID, body: CommentDecision):
+    """Approve or reject a comment, or send it back to waiting.
+
+    Only a comment its author asked to publish can be approved; anything else
+    is answered as not found, so this cannot publish a private comment.
+    """
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE app.survey_submissions SET comment_status = %s
+                    WHERE submission_id = %s AND comments IS NOT NULL AND comment_public
+                    RETURNING submission_id
+                    """,
+                    (body.status, str(submission_id)),
+                )
+                found = cur.fetchone()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    if found is None:
+        raise HTTPException(status_code=404, detail="No comment its author asked to publish has that id.")
+    return {"submission_id": str(submission_id), "status": body.status}
 
 
 @app.get("/health")
