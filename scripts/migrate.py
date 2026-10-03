@@ -21,6 +21,7 @@ record would have each treat the other's migrations as missing.
 from __future__ import annotations
 
 import argparse
+import shlex
 import shutil
 import subprocess
 import sys
@@ -61,6 +62,22 @@ def main() -> int:
     database = args.database or urls["yoyo"]
     ours = database == urls["yoyo"]
     config = root / "api" / "yoyo.ini"
+    source = root / "api" / "migrations"
+
+    # yoyo treats the directory it is given as a glob pattern, and a pattern
+    # matching nothing leaves it with no migrations to apply, which it reports
+    # as success. Saying so here costs one check and turns the quietest failure
+    # this script has into the loudest.
+    migrations = sorted(source.glob("*.sql")) + sorted(source.glob("*.py"))
+    if not migrations:
+        sys.exit(f"\nNo migrations found in {source}\n")
+    if set("*?[]") & set(str(source)):
+        sys.exit(
+            f"\nThe path to the migrations contains a character yoyo reads as a\n"
+            f"glob pattern, so it would search for a name that does not exist:\n\n"
+            f"  {source}\n\n"
+            f"Move the checkout somewhere without * ? [ or ] in the path.\n"
+        )
 
     # uvx, not uv: it is a separate binary beside uv, and it is the one that
     # fetches and runs yoyo. Saying which name was looked for, and that it was
@@ -79,9 +96,9 @@ def main() -> int:
 
     shown = urls["display"].replace("postgres:", "postgresql+psycopg:", 1)
     print(
-        f"\n  {' '.join(YOYO)} {command} \\\n"
+        f"\n  {shlex.join(YOYO)} {command} \\\n"
         f"    --database {shown if ours else '<the database you gave>'} \\\n"
-        f"    --config {config}\n"
+        f"    --config {shlex.quote(str(config))} {shlex.quote(str(source))}\n"
     )
 
     sys.stdout.flush()
@@ -90,7 +107,7 @@ def main() -> int:
         wait_for_database(urls, seconds=args.wait)
 
     result = subprocess.run(
-        [*YOYO, command, "--database", database, "--config", str(config)],
+        [*YOYO, command, "--database", database, "--config", str(config), str(source)],
         check=False,
     )
     if result.returncode != 0:
