@@ -491,6 +491,14 @@
   }
   .ss-textarea:focus { border-color: #93c5fd; }
 
+  /* Opt-in to showing the comment on the main map */
+  .ss-public-opt {
+    display: flex; align-items: flex-start; gap: 8px; margin-top: 8px;
+    font: 12px/1.4 'Inter', sans-serif; color: #334155; cursor: pointer;
+  }
+  .ss-public-opt input { accent-color: #1d4ed8; width: 14px; height: 14px; margin: 1px 0 0; flex-shrink: 0; }
+  .ss-public-opt small { display: block; color: #888780; font-size: 11px; }
+
   /* Footer */
   .ss-footer {
     padding: 7px 16px 14px; display: flex; gap: 8px;
@@ -706,6 +714,11 @@
       <div>
         <div class="ss-q-label">Any other comments? <span style="font-size:11px;font-weight:400;color:#888780">(optional)</span></div>
         <textarea class="ss-textarea" id="ss-comments" rows="3" maxlength="500" placeholder="Describe your experience…"></textarea>
+        <label class="ss-public-opt">
+          <input type="checkbox" id="ss-comment-public">
+          <span>Show my comment anonymously on the public map
+            <small>Comments are reviewed before they appear on the map.</small></span>
+        </label>
       </div>
     </div>
     <div class="ss-footer">
@@ -2152,6 +2165,7 @@ function openSurveyPanel() {
   document.querySelectorAll('.ss-time-btn,.ss-tvol-btn,.ss-lb').forEach(b => b.classList.remove('sel'));
   document.querySelectorAll('.ss-req-block').forEach(el => el.classList.remove('error'));
   document.getElementById('ss-comments').value = '';
+  document.getElementById('ss-comment-public').checked = false;
 
   /* Reset submit button and confirmation screen from any prior submission */
   const submitBtn = document.getElementById('ss-submit-btn');
@@ -2215,6 +2229,7 @@ async function submitSurvey() {
     would_ride_again:     sumRideAgain,
     trip_purpose:         sumTripPurpose,
     comments:             document.getElementById('ss-comments').value.trim() || null,
+    comment_public:       document.getElementById('ss-comment-public').checked,
   };
 
   const btn = document.getElementById('ss-submit-btn');

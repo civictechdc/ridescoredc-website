@@ -73,6 +73,8 @@
   .controls {
     position: fixed; top: 12px; left: 12px; z-index: 900;
     display: flex; align-items: center; gap: 6px;
+    /* Wrap onto a second row rather than run under the logo on a phone. */
+    flex-wrap: wrap; max-width: calc(100vw - 180px);
   }
   .ctrl-btn {
     background: #fff; border: 1px solid #d1d5db;
@@ -81,10 +83,11 @@
     cursor: pointer; transition: all .15s;
     display: flex; align-items: center; gap: 6px;
     box-shadow: 0 1px 4px rgba(0,0,0,.08);
-    user-select: none;
+    user-select: none; white-space: nowrap;
   }
   .ctrl-btn:hover { background: #f8fafc; border-color: #94a3b8; }
   .ctrl-btn svg { width: 14px; height: 14px; }
+  .ctrl-btn[hidden] { display: none; }
 
   /* ── Toggle buttons: pill with indicator dot ── */
   .toggle-btn { position: relative; padding-left: 26px; }
@@ -211,6 +214,59 @@
   /* ── Map ── */
   #map { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
 
+  /* ── Rider hazard legend bottom-left, shown with the layer ── */
+  #hazard-legend {
+    position: fixed; bottom: 28px; left: 12px; z-index: 800;
+    background: #fff; border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    padding: 10px 12px; font-size: 11px; color: #334155;
+    display: none;
+  }
+  #hazard-legend.open { display: block; }
+  #hazard-legend { width: 300px; max-width: calc(100vw - 24px); }
+  #hazard-legend .legend-title { font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+  #hazard-legend table { border-collapse: collapse; width: 100%; }
+  #hazard-legend th {
+    text-align: left; font-weight: 600; color: #64748b;
+    font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+    padding: 4px 6px 4px 0; border-bottom: 1px solid #e2e8f0;
+  }
+  #hazard-legend td { padding: 5px 6px 5px 0; vertical-align: top; line-height: 1.35; }
+  #hazard-legend tr + tr td { border-top: 1px solid #f1f5f9; }
+  #hazard-legend td.level { font-weight: 600; color: #1a1a2e; white-space: nowrap; }
+  #hazard-legend .swatch {
+    display: inline-block; width: 18px; margin-top: 4px;
+    border-radius: 3px; outline: 1.5px solid #1a1a2e;
+  }
+  #hazard-legend .legend-note { margin-top: 6px; color: #64748b; line-height: 1.35; }
+
+  /* ── Rider hazard reviews popup ── */
+  .hz-popup { font-family: 'Inter', sans-serif; width: 270px; max-width: 100%; }
+  .hz-title { font-size: 13px; color: #1a1a2e; }
+  .hz-level { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 11px; color: #334155; }
+  .hz-level .swatch { width: 16px; height: 5px; border-radius: 3px; outline: 1.5px solid #1a1a2e; }
+  /* Scrolls inside the popup rather than running off the screen. */
+  .hz-body { max-height: min(340px, 55vh); overflow-y: auto; margin-right: -6px; padding-right: 6px; }
+  .hz-count { margin-top: 8px; font-size: 12px; font-weight: 600; color: #1a1a2e; }
+  .hz-section {
+    margin-top: 10px; padding-bottom: 3px; border-bottom: 1px solid #e2e8f0;
+    font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #64748b;
+  }
+  .hz-table { margin-top: 4px; font-size: 11px; border-collapse: collapse; width: 100%; }
+  .hz-table td { padding: 2px 0; vertical-align: top; line-height: 1.4; color: #1a1a2e; }
+  .hz-table td.hz-k { color: #64748b; padding-right: 8px; white-space: nowrap; }
+  .hz-n, .hz-none, .hz-note, .hz-meta { color: #94a3b8; }
+  .hz-none { font-size: 11px; margin-top: 4px; }
+  .hz-note { font-size: 10px; margin-top: 4px; }
+  .hz-comments { list-style: none; margin: 4px 0 0; padding: 0; }
+  .hz-comments li { padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+  .hz-comments p { margin: 0; font-size: 11px; line-height: 1.45; color: #334155; overflow-wrap: anywhere; }
+  .hz-meta { font-size: 10px; }
+  .hz-more {
+    margin-top: 4px; padding: 0; border: none; background: none; cursor: pointer;
+    font: 600 11px 'Inter', sans-serif; color: #2563eb;
+  }
+
   /* ── Popup override ── */
   .maplibregl-popup { max-width: 320px; font: 12px/18px 'Inter', sans-serif; }
   .maplibregl-popup-content { padding: 12px 14px; border-radius: 8px; }
@@ -245,6 +301,20 @@
   <button class="ctrl-btn toggle-btn" id="accidentsBtn" onclick="toggleAccidents()">
     Accidents
   </button>
+  <!-- Hidden until the tile server is known to publish rider_hazard. -->
+  <button class="ctrl-btn toggle-btn" id="hazardBtn" onclick="toggleRiderHazard()" hidden>
+    Rider hazard
+  </button>
+</div>
+
+<!-- ── Rider hazard legend; rows are filled from HAZARD_LEVELS ── -->
+<div id="hazard-legend">
+  <div class="legend-title">Rider-reported hazard</div>
+  <table>
+    <thead><tr><th>Color</th><th>Level</th><th>What it means</th></tr></thead>
+    <tbody id="hazard-legend-rows"></tbody>
+  </table>
+  <div class="legend-note">From survey answers to "How safe did you feel?" The more riders agree, the further a street moves toward critical or low.</div>
 </div>
 
 <!-- ── Settings panel ── -->
@@ -370,6 +440,198 @@ function RefreshZone(i_ridescore, i_speedlimit, i_numlanes, i_facility, i_functi
   console.log('Refreshed');
 }
 
+/* ── Rider-reported hazard ──
+   How unsafe survey respondents say each road is. The levels are decided in
+   serving.rider_hazard (ridescoredc-models), not here; this only colours them.
+   Main map only: respondents must not see other riders' answers before giving
+   their own, so the survey page never loads this source.
+
+   The source exists only once a bundle that defines it has been loaded, so the
+   button stays hidden until the tile server's catalog lists it.
+
+   The meanings below describe the cut-offs in serving.rider_hazard in words,
+   without its numbers, which riders never see. Changing a cut-off there may
+   mean rewording one here.
+
+   Sky blue, blue, magenta, deep purple: a different hue at every step, so
+   neighbouring levels cannot be confused, and none of the reds, yellows or
+   greens the score layer uses. Checked for colour-blind separation. Lines also
+   thicken with the level, so the order does not rest on colour alone.
+   "Not enough data" is grey and thinnest, since it is not a level. */
+const HAZARD_LEVELS = [
+  // level           colour     width  label              meaning
+  ['critical',     '#581c87', 7, 'Critical',        'Many riders felt very unsafe here.'],
+  ['high',         '#a21caf', 6, 'High',            'Riders mostly felt unsafe here.'],
+  ['moderate',     '#2563eb', 5, 'Moderate',        'Mixed: some riders felt safe, others did not.'],
+  ['low',          '#7dd3fc', 4, 'Low',             'Riders generally felt safe here.'],
+  ['insufficient', '#cbd5e1', 3, 'Not enough data', 'Fewer than 3 riders have rated it so far.'],
+];
+// The casing sits 2px wider on each side of whatever width the level draws at.
+const hazardWidth = (extra) => ['match', ['get', 'hazard_level'],
+  ...HAZARD_LEVELS.flatMap(([level, , width]) => [level, width + extra]), 3 + extra];
+
+// The score layer uses the same red-to-green range, so while rider hazard is
+// shown the scores are drawn in a faint grey: the streets stay visible for
+// orientation, and every colour on the map is a rider-reported one.
+const SCORE_FADED = { 'line-color': '#e2e8f0', 'line-opacity': 0.8 };
+let scorePaint = null;
+
+let riderHazardOn = false;
+function toggleRiderHazard() {
+  riderHazardOn = !riderHazardOn;
+  toggleLayers('hazardBtn', ['rider_hazard_casing', 'rider_hazard'], riderHazardOn);
+  document.getElementById('hazard-legend').classList.toggle('open', riderHazardOn);
+
+  if (!scorePaint) {
+    scorePaint = Object.fromEntries(Object.keys(SCORE_FADED).map(k => [k, map.getPaintProperty('update_score', k)]));
+  }
+  for (const [prop, value] of Object.entries(riderHazardOn ? SCORE_FADED : scorePaint)) {
+    map.setPaintProperty('update_score', prop, value);
+  }
+}
+
+/* ── Reviews popup for a rider hazard street ──
+   Opens at once with what the tile already carries (name and level), then
+   fills in from /api/segments/{id}/reviews. Comments and street names are
+   written by the public, so everything from the response goes through esc()
+   before it reaches the page. */
+const COMMENTS_SHOWN = 3;
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+function reviewRow(label, value) {
+  return `<tr><td class="hz-k">${label}</td><td>${value ?? '<span class="hz-none">No answers</span>'}</td></tr>`;
+}
+
+function renderReviews(r) {
+  const s = r.street, rt = r.routes, again = rt.ride_again;
+  const stress = s.top_stress_factors.length
+    ? s.top_stress_factors.map(f => `${esc(f.factor)} <span class="hz-n">(${f.count})</span>`).join('<br>')
+    : null;
+  const againTotal = again.yes + again.probably + again.no;
+
+  const comments = r.comments.map(c => `
+    <li><p>${esc(c.text)}</p>
+      <span class="hz-meta">${esc(c.date)}${c.time_of_day ? ' · ' + esc(c.time_of_day) : ''}</span></li>`);
+
+  return `
+    <div class="hz-count">${r.n_reviews} ${r.n_reviews === 1 ? 'rider' : 'riders'} reviewed this street</div>
+
+    <div class="hz-section">This street</div>
+    <table class="hz-table">
+      ${reviewRow('How safe it felt', s.mean_safety != null ? `${s.mean_safety} / 10` : null)}
+      ${reviewRow('Stress level (LTS)', s.mean_lts != null ? `${s.mean_lts} / 4` : null)}
+      ${reviewRow('Main stress causes', stress)}
+    </table>
+
+    <div class="hz-section">Routes that included it</div>
+    <table class="hz-table">
+      ${reviewRow('Overall satisfaction', rt.mean_satisfaction != null ? `${rt.mean_satisfaction} / 5` : null)}
+      ${reviewRow('Would ride again', againTotal ? `Yes ${again.yes} · Probably ${again.probably} · No ${again.no}` : null)}
+      ${reviewRow('Most often ridden', rt.common_time ? esc(rt.common_time) : null)}
+    </table>
+
+    <div class="hz-section">Comments</div>
+    ${comments.length ? `
+      <ul class="hz-comments">${comments.slice(0, COMMENTS_SHOWN).join('')}</ul>
+      ${comments.length > COMMENTS_SHOWN ? `
+        <ul class="hz-comments" hidden>${comments.slice(COMMENTS_SHOWN).join('')}</ul>
+        <button class="hz-more" type="button">Show ${comments.length - COMMENTS_SHOWN} more</button>` : ''}
+      <div class="hz-note">About the whole route, which may include other streets.</div>`
+    : '<div class="hz-none">No public comments yet.</div>'}`;
+}
+
+// Moves the map, and the popup with it, just far enough that the whole popup
+// is on screen and clear of the buttons along the top.
+function panPopupIntoView(map, popup) {
+  const box = popup.getElement().getBoundingClientRect();
+  const view = map.getContainer().getBoundingClientRect();
+  const top = view.top + 56, bottom = view.bottom - 12;
+  let dy = 0;
+  if (box.bottom > bottom) dy = box.bottom - bottom;
+  if (box.top - dy < top) dy = box.top - top;
+  if (dy) map.panBy([0, dy]);
+}
+
+async function openReviewsPopup(map, lngLat, p) {
+  const level = HAZARD_LEVELS.find(([l]) => l === p.hazard_level);
+  const popup = new maplibregl.Popup({ maxWidth: '320px' }).setLngLat(lngLat).setHTML(`
+    <div class="hz-popup">
+      <strong class="hz-title">${esc(p.route_name || 'Unnamed Road')}</strong>
+      <div class="hz-level">
+        <span class="swatch" style="background:${level ? level[1] : '#cbd5e1'}"></span>
+        ${esc(level ? level[3] : p.hazard_level)} rider hazard
+      </div>
+      <div class="hz-body"><div class="hz-none">Loading reviews…</div></div>
+    </div>`).addTo(map);
+
+  const body = popup.getElement().querySelector('.hz-body');
+  try {
+    const res = await fetch(`/api/segments/${encodeURIComponent(p.segment_id)}/reviews`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    body.innerHTML = renderReviews(await res.json());
+    // The popup was placed while it held one line. Placing it again lets the
+    // map choose the side with room for what it holds now.
+    popup.setLngLat(lngLat);
+    panPopupIntoView(map, popup);
+    const more = body.querySelector('.hz-more');
+    if (more) more.addEventListener('click', () => {
+      body.querySelector('.hz-comments[hidden]').hidden = false;
+      more.remove();
+    });
+  } catch (err) {
+    console.error('Reviews failed to load:', err);
+    body.innerHTML = '<div class="hz-none">Reviews could not be loaded. Try again in a moment.</div>';
+  }
+}
+
+async function addRiderHazard(map) {
+  try {
+    const catalog = await (await fetch(`${location.origin}/tiles/catalog`)).json();
+    if (!catalog.tiles || !catalog.tiles.rider_hazard) return;
+  } catch (err) {
+    return;
+  }
+
+  map.addSource('rider-hazard', {
+    type: 'vector',
+    tiles: [RideScore.config.tiles('rider_hazard')],
+    minzoom: 1, maxzoom: 14
+  });
+
+  // A dark casing under a wider line, so a rider-reported level stays readable
+  // on top of the score colours, which use the same red-to-green range.
+  map.addLayer({
+    id: 'rider_hazard_casing', type: 'line',
+    source: 'rider-hazard', 'source-layer': 'rider_hazard',
+    layout: { visibility: 'none', 'line-cap': 'round' },
+    paint: { 'line-color': '#1a1a2e', 'line-width': hazardWidth(4) }
+  });
+  map.addLayer({
+    id: 'rider_hazard', type: 'line',
+    source: 'rider-hazard', 'source-layer': 'rider_hazard',
+    layout: { visibility: 'none', 'line-cap': 'round' },
+    paint: {
+      'line-color': ['match', ['get', 'hazard_level'],
+        ...HAZARD_LEVELS.flatMap(([level, color]) => [level, color]),
+        '#cbd5e1'],
+      'line-width': hazardWidth(0)
+    }
+  });
+
+  map.on('click', 'rider_hazard', (e) => openReviewsPopup(map, e.lngLat, e.features[0].properties));
+  map.on('mouseenter', 'rider_hazard', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'rider_hazard', () => { map.getCanvas().style.cursor = ''; });
+
+  document.getElementById('hazard-legend-rows').innerHTML = HAZARD_LEVELS.map(([, color, width, label, meaning]) =>
+    `<tr><td><span class="swatch" style="background:${color};height:${width}px"></span></td><td class="level">${label}</td><td>${meaning}</td></tr>`
+  ).join('');
+  document.getElementById('hazardBtn').hidden = false;
+}
+
 /* ── Map ── */
 const map = RideScore.createMap('map');
 
@@ -393,9 +655,12 @@ map.on('style.load', () => {
   });
 
   RideScore.addCrashes(map);
+  addRiderHazard(map);
 
   /* ── Popup on click ── */
   map.on('click', 'update_score', (e) => {
+    // The rider hazard layer draws over these roads and opens its own popup.
+    if (riderHazardOn && map.queryRenderedFeatures(e.point, { layers: ['rider_hazard'] }).length) return;
     const p = e.features[0].properties;
     const html = `
       <div style="font-family:'Inter',sans-serif">

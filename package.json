@@ -12,7 +12,7 @@
     "data": "uv run scripts/load_data.py",
     "migrate": "uv run scripts/migrate.py",
     "migrate:list": "uv run scripts/migrate.py --list",
-    "setup": "npm run data && npm run migrate"
+    "setup": "npm run migrate && npm run data"
   },
   "devDependencies": {
     "vite": "^7.0.0"
