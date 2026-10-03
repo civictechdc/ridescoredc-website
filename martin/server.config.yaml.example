@@ -29,8 +29,18 @@
 # So: serving, and only serving. The road data stays where only serving can
 # reach it.
 
+# ── Why auto_bounds is skip ───────────────────────────────────────────────────
+#
+# Martin works out once, at startup, the area each source's rows cover, and
+# answers every tile outside it with nothing. serving.rider_hazard grows as
+# people answer the survey, so a street rated for the first time outside that
+# area would stay off the map until the next restart. Skipping the calculation
+# serves every source everywhere; the cost is a query for tiles outside DC that
+# would have been refused without one.
+
 postgres:
   connection_string: postgresql://USER:PASSWORD@localhost:5432/db
+  auto_bounds: skip
   auto_publish:
     tables:
       from_schemas:
@@ -38,3 +48,16 @@ postgres:
     functions:
       from_schemas:
         - serving
+
+# ── Why there is no tile cache ────────────────────────────────────────────────
+#
+# Martin keeps a cached tile until it restarts, and this version can neither
+# expire tiles nor leave one source out of the cache. serving.rider_hazard
+# changes with every survey response, so a cached tile would hide new ratings
+# until the next deploy. Every tile is built from the database instead; the
+# road network is small and indexed, so that is cheap.
+
+# cache_size_mb rather than tile_cache_size_mb: this version ignores the
+# latter unless the former is also set. It turns off Martin's other caches
+# too, which hold fonts, sprites and PMTiles, none of which this site uses.
+cache_size_mb: 0
