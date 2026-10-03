@@ -61,6 +61,7 @@ def main() -> int:
     database = args.database or urls["yoyo"]
     ours = database == urls["yoyo"]
     config = root / "api" / "yoyo.ini"
+    source = root / "api" / "migrations"
 
     # uvx, not uv: it is a separate binary beside uv, and it is the one that
     # fetches and runs yoyo. Saying which name was looked for, and that it was
@@ -81,7 +82,7 @@ def main() -> int:
     print(
         f"\n  {' '.join(YOYO)} {command} \\\n"
         f"    --database {shown if ours else '<the database you gave>'} \\\n"
-        f"    --config {config}\n"
+        f"    --config {config} {source}\n"
     )
 
     sys.stdout.flush()
@@ -90,7 +91,7 @@ def main() -> int:
         wait_for_database(urls, seconds=args.wait)
 
     result = subprocess.run(
-        [*YOYO, command, "--database", database, "--config", str(config)],
+        [*YOYO, command, "--database", database, "--config", str(config), str(source)],
         check=False,
     )
     if result.returncode != 0:

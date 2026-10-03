@@ -58,7 +58,7 @@
   }
   @media (max-width: 768px) {
     /* Push controls below the DC Bike Safety logo button so they never overlap */
-    .controls { top: 52px; }
+    .controls { top: 62px; }
   }
   .ctrl-btn {
     background: #fff; border: 1px solid #d1d5db; color: #334155;
@@ -105,18 +105,26 @@
     cursor: crosshair;
   }
 
-  /* Hint strip shown while paint mode is active */
-  #paint-hint {
-    position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%);
-    background: rgba(29, 78, 216, 0.88); color: #fff;
-    border-radius: 8px; padding: 9px 16px;
-    font: 500 12px/1.4 'Inter', sans-serif;
-    pointer-events: none; z-index: 600;
-    opacity: 0; transition: opacity .2s ease;
-    max-width: min(420px, 92vw); text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,.2);
+  /* Drawing help stays off the map until someone asks for it. */
+  #mode-help[hidden] { display: none; }
+  #mode-help { width: 50px; justify-content: center; padding: 0; }
+  .mode-hint {
+    display: none; position: fixed; top: 102px; left: 12px;
+    width: min(320px, calc(100vw - 24px));
+    background: #eff6ff; color: #1e3a8a;
+    border: 1px solid #93c5fd; border-radius: 10px;
+    padding: 12px 48px 12px 14px;
+    font: 500 12px/1.45 'Inter', sans-serif;
+    z-index: 950; box-shadow: 0 4px 16px rgba(0,0,0,.16);
   }
-  #paint-hint.visible { opacity: 1; }
+  .mode-hint.visible { display: block; }
+  .mode-hint-close {
+    position: absolute; top: 4px; right: 4px;
+    width: 44px; height: 44px; border: none; border-radius: 8px;
+    background: transparent; color: inherit; font: 20px/1 'Inter', sans-serif;
+    cursor: pointer;
+  }
+  .mode-hint-close:hover { background: rgba(0,0,0,.08); }
 
   /* Unpaint canvas — above map when Unpaint mode is on */
   #unpaint-canvas {
@@ -128,17 +136,7 @@
     cursor: crosshair;
   }
 
-  #unpaint-hint {
-    position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%);
-    background: rgba(185, 28, 28, 0.92); color: #fff;
-    border-radius: 8px; padding: 9px 16px;
-    font: 500 12px/1.35 'Inter', sans-serif;
-    pointer-events: none; z-index: 600;
-    opacity: 0; transition: opacity .2s ease;
-    max-width: min(420px, 92vw); text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,.2);
-  }
-  #unpaint-hint.visible { opacity: 1; }
+  #unpaint-hint { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
 
   #unpaintBtn.active { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
   #unpaintBtn.active::before { background: #dc2626; }
@@ -534,6 +532,32 @@
     border-radius: 8px; background: #1a1a2e; color: #fff;
     font: 600 13px 'Inter'; cursor: pointer;
   }
+
+  /* Leave enough room for a finger on the phone survey. */
+  @media (max-width: 768px) {
+    body.survey-active #map { bottom: 50dvh; }
+    #survey-sheet { height: 50dvh; }
+    #attribution-panel { top: 166px; }
+    .mode-hint { top: 166px; }
+
+    #logo-box, #attribution-panel .close-btn, .ctrl-btn, .badge-btn,
+    .ss-close, .ss-seg, .ss-lb, .ss-lts-info-btn,
+    .ss-check-item, .ss-time-btn, .ss-cal-btn, .ss-tvol-btn,
+    .ss-btn-back, .ss-btn-next, .ss-btn-finish, .ss-confirm button,
+    .survey-close, .rating-btn, .time-btn, .traffic-vol-btn {
+      min-height: 44px;
+    }
+
+    .ss-close, .survey-close, .ss-btn-back { min-width: 44px; }
+    .ss-close, .survey-close { padding: 0; }
+    .ss-lts-info-btn { padding: 0 8px; }
+
+    /* Ten choices cannot fit in one row at a usable touch size. */
+    #ss-safety-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
 </style>
 </head>
 <body>
@@ -564,6 +588,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
     Unpaint
   </button>
+  <button class="ctrl-btn" id="mode-help" type="button" hidden aria-expanded="false" aria-controls="paint-hint unpaint-hint" aria-label="Route drawing instructions" title="Route drawing instructions" onclick="toggleModeHelp()">Help</button>
 </div>
 
 
@@ -571,10 +596,15 @@
 <canvas id="paint-canvas"></canvas>
 <canvas id="unpaint-canvas"></canvas>
 
-<!-- ── Paint hint strip ── -->
-<div id="paint-hint"><strong>Swipe</strong> along roads to add segments (lookahead confirm), or <strong>tap</strong> a road to add one. Undo or tap a blue segment to remove one segment.</div>
-
-<div id="unpaint-hint"><strong>Swipe</strong> across your blue route to strip segments, or <strong>tap</strong> a selected segment to remove it. Use <strong>Paint Route</strong> to add again.</div>
+<!-- ── On-demand route drawing help ── -->
+<div id="paint-hint" class="mode-hint" role="note">
+  <button class="mode-hint-close" type="button" aria-label="Close drawing instructions" onclick="closeModeHelp()">&times;</button>
+  <strong>Draw a route</strong><br>Tap a road to add it, or swipe along roads. Tap a blue road to remove it; Undo removes the last segment.
+</div>
+<div id="unpaint-hint" class="mode-hint" role="note">
+  <button class="mode-hint-close" type="button" aria-label="Close unpaint instructions" onclick="closeModeHelp()">&times;</button>
+  <strong>Remove roads</strong><br>Tap a blue road or swipe across blue roads to remove them. Choose Paint Route to add roads again.
+</div>
 
 <!-- ── Selection badge ── -->
 <div id="selection-badge">
@@ -902,6 +932,7 @@ const OUTLIER_PRUNE_PX = 62;
 const paintCanvas = document.getElementById('paint-canvas');
 const paintCtx    = paintCanvas.getContext('2d');
 const paintHint   = document.getElementById('paint-hint');
+const modeHelpBtn = document.getElementById('mode-help');
 
 const unpaintCanvas = document.getElementById('unpaint-canvas');
 const unpaintCtx    = unpaintCanvas.getContext('2d');
@@ -933,6 +964,37 @@ function resetSnapQueueForNewStroke() {
   }
 }
 
+function closeModeHelp() {
+  paintHint.classList.remove('visible');
+  unpaintHint.classList.remove('visible');
+  modeHelpBtn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleModeHelp() {
+  const hint = paintMode ? paintHint : unpaintMode ? unpaintHint : null;
+  if (!hint) return;
+  const show = !hint.classList.contains('visible');
+  closeModeHelp();
+  if (show) {
+    hint.classList.add('visible');
+    modeHelpBtn.setAttribute('aria-expanded', 'true');
+  }
+}
+
+function syncModeHelp() {
+  closeModeHelp();
+  const label = paintMode ? 'Drawing instructions' : unpaintMode ? 'Unpaint instructions' : '';
+  modeHelpBtn.hidden = !label;
+  if (label) {
+    modeHelpBtn.setAttribute('aria-label', label);
+    modeHelpBtn.title = label;
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModeHelp();
+});
+
 function togglePaintMode() {
   if (unpaintMode) toggleUnpaintMode();
   if (paintMode && painting) {
@@ -943,7 +1005,7 @@ function togglePaintMode() {
   paintMode = !paintMode;
   document.getElementById('paintBtn').classList.toggle('active', paintMode);
   paintCanvas.style.pointerEvents = paintMode ? 'all' : 'none';
-  paintHint.classList.toggle('visible', paintMode);
+  syncModeHelp();
 
   if (paintMode) {
     map.dragPan.disable();
@@ -967,6 +1029,7 @@ function isStrokeTapGesture(pts, maxDistPx) {
 }
 
 paintCanvas.addEventListener('pointerdown', (e) => {
+  closeModeHelp();
   painting = true;
   paintPoints = [{ x: e.clientX, y: e.clientY }];
   paintCanvas.setPointerCapture(e.pointerId);
@@ -1146,7 +1209,7 @@ function toggleUnpaintMode() {
   unpaintMode = !unpaintMode;
   document.getElementById('unpaintBtn').classList.toggle('active', unpaintMode);
   unpaintCanvas.style.pointerEvents = unpaintMode ? 'all' : 'none';
-  unpaintHint.classList.toggle('visible', unpaintMode);
+  syncModeHelp();
   if (unpaintMode) {
     map.dragPan.disable();
     map.scrollZoom.disable();
@@ -1165,6 +1228,7 @@ function toggleUnpaintMode() {
 }
 
 unpaintCanvas.addEventListener('pointerdown', (e) => {
+  closeModeHelp();
   unpainting = true;
   unpaintPoints = [{ x: e.clientX, y: e.clientY }];
   unpaintCanvas.setPointerCapture(e.pointerId);
