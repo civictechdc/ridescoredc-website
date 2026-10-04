@@ -4,8 +4,7 @@
 <title>DC Bike Safety — Feedback MVP</title>
 <meta charset='utf-8'>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel='stylesheet' href='https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css' />
-<script src='https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js'></script>
+<link rel='stylesheet' href='https://unpkg.com/maplibre-gl@6.4.1/dist/maplibre-gl.css' />
 
 <!-- Shared with the map page. Absolute paths, so the same tags work from any
      page whatever folder it sits in.
@@ -733,7 +732,9 @@
 <!-- ── Map ── -->
 <div id="map"></div>
 
-<script>
+<script type="module">
+import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.4.1/dist/maplibre-gl.mjs';
+window.maplibregl = maplibregl;
 /* ════════════════════════════════════════════════════════
    EXISTING MAP CONTROLS
 ════════════════════════════════════════════════════════ */
@@ -2246,6 +2247,28 @@ async function submitSurvey() {
 function resetAfterSurveySubmit() {
   closeSurveySheet();
   clearSelection();
+}
+
+// Inline HTML handlers still need globals now that MapLibre is an ES module.
+Object.assign(window, {
+  togglePaintMode, toggleUnpaintMode, undoLastSegment, undoLastPaintStroke,
+  clearSelection, openSurveyPanel, closeSurveySheet, toggleLtsInfo, setSegLts,
+  setSegSafety, setSumTime, setSumSat, setSumAgain, summaryBack, submitSurvey,
+  resetAfterSurveySubmit, segBack, segNext, goToSummary,
+});
+
+if (RideScore.installSurveyDebug) {
+  RideScore.installSurveyDebug({
+    map, selectedSegments, segmentEndpoints, buildContiguousSegments,
+    get selectionHistory() { return selectionHistory; },
+    get strokeBatchesHistory() { return strokeBatchesHistory; },
+    get strokeOrderedSegmentIds() { return strokeOrderedSegmentIds; },
+    get snapQueue() { return snapQueue; },
+    get painting() { return painting; },
+    get unpainting() { return unpainting; },
+    get paintMode() { return paintMode; },
+    get unpaintMode() { return unpaintMode; },
+  });
 }
 </script>
 </body>

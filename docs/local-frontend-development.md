@@ -77,7 +77,7 @@ first command usually changes nothing — run it anyway and your branch can neve
 npm install
 ```
 
-This installs one tool, Vite, into `node_modules/` inside the repository. Vite serves the
+This installs Vite and the browser-testing tools into `node_modules/` inside the repository. Vite serves the
 pages and reloads the browser when you save. The site is plain HTML, CSS and JavaScript
 with no build step, so the files you edit are exactly the files the servers publish.
 
@@ -176,6 +176,86 @@ text or the element ID you want rather than reading top to bottom.
 git status        # nothing unexpected
 git diff          # every line is one you meant to write
 ```
+
+### Survey browser tests and hard-to-reproduce bugs
+
+Install Chromium once, then run the Playwright suite:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+npm run test:ui
+```
+
+On Linux runners that lack browser system libraries, use
+`npx playwright install --with-deps chromium` instead. Playwright starts its own
+Vite server. The automated tests use synthetic, fixed road tiles and a local
+MapLibre distribution, not the shared database or live basemap. API submissions
+are intercepted: running tests does not send survey responses to staging.
+Mouse and touch projects exercise painting, erasing, undo, overlapping strokes,
+mode changes, camera movement, and the survey flow, including delayed responses.
+
+Every test retains a trace, including passing runs. The HTML report and
+`test-results/` contain the evidence attachments. Open the report with
+`npx playwright show-report`, or a trace with
+`npx playwright show-trace PATH-TO-TRACE.zip`.
+Traces provide browser screenshots, DOM and network history; WebGL highlights
+and internal selection state also need the attached survey diagnostics.
+Artifacts are ignored by Git and should be reviewed before sharing.
+
+The sequence tests use a repeatable seed. To replay or explore another seed:
+
+**macOS, Linux and WSL**
+
+```bash
+SURVEY_SEED=24 npm run test:e2e
+SURVEY_SEED=24 SURVEY_TILE_DELAY_MS=500 npm run test:e2e
+```
+
+**Windows (PowerShell)**
+
+```powershell
+$env:SURVEY_SEED = "24"
+$env:SURVEY_TILE_DELAY_MS = "500"
+npm run test:e2e
+```
+
+The default tile delay is 120 ms; use `SURVEY_TILE_DELAY_MS=0` for the baseline
+and rerun the same seed with slower tiles to investigate timing sensitivity.
+Submission tests also cover delayed success, HTTP errors, and network failures.
+
+For manual exploration against your configured upstream, start `npm run dev`
+and open **http://localhost:5173/survey/?debugSurvey=1**. In the browser console:
+
+```javascript
+RideScore.surveyDebug.snapshot()
+copy(RideScore.surveyDebug.export())
+```
+
+`copy` is a browser DevTools helper; save the copied JSON locally. Export **before**
+submitting, clearing, or reloading when a ghost appears. The log retains the
+last 1,000 events and reports how many earlier events were dropped. It records
+pointer coordinates/types, camera state, typed tile IDs, selected roads' durable
+IDs/names/endpoints, feature-state changes, selection and undo history, and
+consistency snapshots. It does not record survey
+answers or free-text comments. Diagnostics are injected only by Vite and require
+both a loopback hostname and the explicit query parameter; normal pages and
+production do not load them.
+
+Check `snapshot().issues` after a gesture completes. Intermediate snapshots can
+legitimately differ while a selection operation updates the map and badge.
+The checks detect committed highlight/selection disagreement and orphan pending
+highlights, including IDs touched earlier that have left the viewport. The badge
+counts grouped roads produced by the route sequencer, **not** raw tile IDs.
+These are state-based checks, not proof of actual rendered pixels.
+
+For issue #24, no original reproduction is assumed. If exploration or a seeded
+test fails, keep the trace, seed, action history, diagnostics, and road fixture
+together. Replay the same environment, remove actions until the smallest sequence
+still fails, then add that sequence as a named regression test before fixing it.
+Synthetic tiles isolate selection logic but do not replace a follow-up test with
+the real failing road geometry. Never commit a production database dump or
+unreviewed browser artifacts.
 
 ## Step 9 — Open a Pull Request
 

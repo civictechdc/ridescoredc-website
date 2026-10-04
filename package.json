@@ -5,6 +5,9 @@
   "scripts": {
     "check-env": "node scripts/check-env.mjs",
     "dev": "vite",
+    "test:e2e": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
     "stack": "node scripts/check-env.mjs && docker compose up",
     "stack:down": "docker compose down",
     "stack:logs": "docker compose logs -f",
@@ -15,6 +18,10 @@
     "setup": "npm run data && npm run migrate"
   },
   "devDependencies": {
-    "vite": "^7.0.0"
+    "@playwright/test": "^1.63.0",
+    "geojson-vt": "^5.0.4",
+    "maplibre-gl": "^6.4.1",
+    "vite": "^7.0.0",
+    "vt-pbf": "^3.1.3"
   }
 }

@@ -27,6 +27,18 @@ export default defineConfig(({ mode }) => {
 
   return {
     root: 'frontend',
+    plugins: [{
+      name: 'survey-debug',
+      apply: 'serve',
+      transformIndexHtml(html, context) {
+        if (!context.path.startsWith('/survey/')) return html;
+        return [{
+          tag: 'script',
+          attrs: { src: '/src/survey-debug.js' },
+          injectTo: 'head',
+        }];
+      },
+    }],
     server: {
       proxy: {
         '/tiles': forward,
